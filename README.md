@@ -2,6 +2,12 @@
     <a><img src="assets/banner.png"></a>
 </p>
 
+<p align="center">
+    <a href="https://streamelements.com/axweii/tip"><img src="https://img.shields.io/badge/Sponsor-$1-ea4aaa"></a>
+    <a><img src="https://img.shields.io/github/issues/4dams/twitch-music-id"></a>
+    <a><img src="https://img.shields.io/github/issues-pr/4dams/twitch-music-id"></a>
+</p>
+
 ## Description
 
 **`twitch-music-id`** is a twitch chat bot which automatically identifies music running in [twitch.tv](https://twitch.tv/) live streams, VODs, and clips.
