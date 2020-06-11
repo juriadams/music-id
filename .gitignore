@@ -1,0 +1,6 @@
+dist/
+outputs/*
+node_modules/
+.DS_Store
+src/environment.ts
+example.mp3

@@ -1,0 +1,12 @@
+{
+    "type": "service_account",
+    "project_id": "upheld-clone-243506",
+    "private_key_id": "a18aa730bae33d1c4dda351d7bbef4b1905e0d75",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDIr88kJWnkQuNM\npQWzyQ9NnAfD+I8X8cXg8e0VjhRaOBQF6/Er56DiLvOjSBvBgS+teqebKtI6+szL\nHJ/O1aPvtRQ7erdbvDXSqZ3T0CYG6jywtPcwcWXHEWngDBpcFoLe0eKLLtWz/drN\nzGUfeYerhT/7TshHfdRYkl64mVnjjq4bjQVfzZ11vpUvhFchmGFPRxHTdvvGG1SV\nEJU3Px1U/QkqV0AOSGme1UybjlrCTF3rXU+bFmKwgp1RjLDogto06CcIRtaHU0Pi\nlha3m8+M/y/s6fqFos/pvzpteAvmCIzRC21c8ukqukt4g1fKqKHPVDrsMbIG8n7q\nSfLvP8rTAgMBAAECggEACsd85SB2qQl5z8RrI29SclNF7/NNu2fY92dY9o1Q/d8d\nc1KkNJJITyh6Od7bUXcfAz673bNq/5A4YOObtO54DLokMCxYc1sPLCPc08bqsGpl\nHMoEdH9SxLfynVOTwuFgb7QZo4eFPzZFgu7AJJ9tBcMgJhg4Ml+7R8jXiIDIlgFU\nvijVXaIwkB8gHE9y1VpxsucxRgNANh5O9oHBVqL83Rz2CncN/5XHLLkw3RRZ8Pul\nsxJIvo/dcD2geH2K+yuIp3OG40NGZApQoBrMNM8UIL+rzFFtBjQfVk4viwqVReQe\nXXWHeMKnw+L7SVCwgHXGvIBa6sMFeYUC/+cWKheEYQKBgQDvv3a/PCkkOT1DmVR0\nT0l4tB3AwFyz3MRmXoMWHd1lA8yEwaBjUkmbGaINppXOArzP99yv8ssOfJ5w0EUZ\nxCJTyjAwcR1gvHK7TxYL/8w6oqYqrB27uQ17Ih9K56GtBza15SY0eMRqoOwqrMT8\nhPmP6CrEnN7y+Z21lI2hki2lsQKBgQDWSnxuN5XVX1a91ZpccK7chD6pJ2Ur3Hxr\nGngT/sfzecIwuFdZRheTLkBHDubkbBYUEYPJ2V0Q0cGePxUwpR6PZTwi7XdyTZGx\nDbAQ89Y0Suq4uydHuQisj17NHY6HHABbWA2fN/OY6gnrcVDcuElKBsZGdugAS6dI\nkcaj0AglwwKBgQDr+A7wek4kERJzjl7Je6Bc5SrDpJGZlhjYiP2MryhRXEPYBpvO\nJhe8SKZvuR6I/bjJGLRlmRqyz4VClDru+VSwE7kKdMrtg42JPnX8qXBh5eSW64D4\nW1MhdpxGJWXD3+3BaiEIVDU+ndTUy+e2g0r+kQxHJ/9oNrc7GVOtSysSgQKBgQCt\n35JG++MfVlRTg9XT27qGQud06Po2NJjfboKv9rLW45ylW23EihLm4UhWX8kI3oqr\njeqZBT12QDwR4q2W4uOBBmtdC8E3hakJOEn7911+4KrDaVfd4k0fdtU9KRZUmmvP\nsgqbfhKxqHSUDUXHUeBlqEmJM0Hbu4boYyACGvIBcQKBgHFvIiwSjPgMMNV/iV5K\nyPr1XwwtM6ES/Cxja80K5yxifoTmqLTatJlXr0Jn+eEVLtcVfy8rx/jdti6eqgnG\nOC+40uyEZFhmbIU4xQsVhHQoIIUjvfju7dtjctbVa2L7vyO0niqdV3dAZMo6V4f/\nfPujqfsu3qbeCKio3EK4jgkH\n-----END PRIVATE KEY-----\n",
+    "client_email": "nest-api@upheld-clone-243506.iam.gserviceaccount.com",
+    "client_id": "101808895098889737126",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/nest-api%40upheld-clone-243506.iam.gserviceaccount.com"
+}
