@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    <a href="https://streamelements.com/axweii/tip"><img src="https://img.shields.io/badge/Sponsor-$1-ea4aaa"></a>
+    <a href="https://github.com/sponsors/4dams"><img src="https://img.shields.io/badge/Sponsor-$1-ea4aaa"></a>
     <a><img src="https://img.shields.io/github/issues/4dams/twitch-music-id"></a>
     <a><img src="https://img.shields.io/github/issues-pr/4dams/twitch-music-id"></a>
 </p>
@@ -16,7 +16,7 @@
 
 **`twitch-music-id`** is a twitch chat bot which automatically identifies music running in [twitch.tv](https://twitch.tv/) live streams, VODs, and clips.
 
-The bot originally started as a school project in RATIRLs twitch channel and was intended to run for about 2 weeks to collect various data points to analyze later on. However, the project gained lots of positive feedback, which is why I kept it running. Today, the bot is part of **more than 100 twitch channels** and received **almost 37,000 song requests** of which about **65% were successful**.
+The bot originally started as a school project in RATIRLs twitch channel and was intended to run for about 2 weeks to collect various data points to analyze later on. However, the project gained lots of positive feedback, which is why I kept it running. Today, the bot is part of **more than 100 twitch channels** and received **almost 200,000 song requests** of which about **85% were successful**.
 
 ## Example Usage
 
