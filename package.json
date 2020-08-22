@@ -5,7 +5,7 @@
     "main": "src/twitch.ts",
     "scripts": {
         "build": "tsc",
-        "run": "tsc && node dist/src/main"
+        "start": "tsc && node dist/src/main"
     },
     "author": "Juri Adams <juri@4da.ms>",
     "license": "MIT",
