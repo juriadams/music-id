@@ -113,7 +113,7 @@ export class Channels {
                 const onCooldown = sinceLast < this.channels[channelName].cooldown;
 
                 signale.info(
-                    `${sinceLast} seconds passed since last Identification (${
+                    `${sinceLast} seconds passed since last Identification in Channel ${channelName} (${
                         onCooldown ? "on cooldown" : "not on cooldown"
                     })`,
                 );
