@@ -44,7 +44,7 @@ export class MessageHandler {
 
         // Handle Identification requests
         if (this.channels.channels[channelName].triggers.some((trigger) => message.includes(trigger.keyword))) {
-            this.handleSongIdentification(channelName, sender, client);
+            this.handleSongIdentification(channelName, sender, message, client);
         }
     }
 
@@ -96,7 +96,12 @@ export class MessageHandler {
      * @param requester Name of the Person who requested the Songs
      * @param client Twitch Client instance used to reply with
      */
-    public async handleSongIdentification(channelName: string, requester: string, client: tmi.Client): Promise<void> {
+    public async handleSongIdentification(
+        channelName: string,
+        requester: string,
+        message: string,
+        client: tmi.Client,
+    ): Promise<void> {
         // Check if Channel already has an Idenfiticaion pending
         if (this.channels.pendingChannels.includes(channelName)) {
             return signale.debug(`Itendification for Channel ${channelName} already in progress`);
@@ -131,7 +136,7 @@ export class MessageHandler {
             this.channels.pendingChannels.push(channelName);
 
             // Get Songs playing in Channel
-            const songs = await this.identifier.nowPlaying(channelName);
+            const songs = await this.identifier.nowPlaying(channelName, requester, message);
 
             // Remove Channel from pending and cooldownMessageSent Channels
             this.channels.pendingChannels = this.channels.pendingChannels.filter((channel) => channel !== channelName);
