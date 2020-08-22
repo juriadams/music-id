@@ -7,12 +7,10 @@ export interface Song {
     album: string;
     label: string;
     timecode: string;
+    acrid: string;
     urls: {
         spotify: string;
         deezer: string;
         youtube: string;
     };
-    url: string;
-    acrid: string;
-    identifiedAt?: Moment;
 }

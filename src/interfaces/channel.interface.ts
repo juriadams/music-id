@@ -1,12 +1,13 @@
 export interface Channel {
-    channelName: string;
+    id: number;
     cooldown: number;
+    channelName: string;
+    active: boolean;
     messageTemplates: {
-        cooldown: string;
-        cooldownWithId: string;
-        error: string;
-        success: string;
-    };
-    triggers: string[];
-    enabled?: boolean;
+        type: "SUCCESS" | "COOLDOWN" | "COOLDOWN_WITH_ID" | "ERROR";
+        template: string;
+    }[];
+    triggers: {
+        keyword: string;
+    }[];
 }

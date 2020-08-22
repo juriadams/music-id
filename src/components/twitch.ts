@@ -1,64 +1,62 @@
 import { environment } from "../environment";
-import { Firestore } from "./firestore";
 import { Channels } from "./channels";
 import { MessageHandler } from "./message-handler";
 import signale from "signale";
 import * as tmi from "tmi.js";
-import { Identifier } from "./identifier";
 
 export class TwitchClient {
     /**
      * Twitch client instance
      */
-    // @ts-ignore
+    // @ts-ignore Client will be initialized asynchronous after the Channels are loaded
     public client: tmi.Client;
 
-    constructor(private firestore: Firestore, private channels: Channels, private handler: MessageHandler) {
-        // Connect to Firestore
-        this.firestore
-            .init()
-            .then(() => {
-                // Get list of channels to join
-                this.channels
-                    .getChannels()
-                    .then((channels) => {
-                        signale.debug("Creating new Twitch client");
-                        signale.debug(channels);
+    constructor(private channels: Channels, private handler: MessageHandler) {
+        this.init();
+    }
 
-                        // Create new Twitch client joining all found channels
-                        this.client = tmi.Client({
-                            channels,
-                            connection: {
-                                reconnect: true,
-                                secure: true,
-                            },
-                            identity: {
-                                username: environment.twitch.username,
-                                password: environment.twitch.auth,
-                            },
-                        });
+    /**
+     * Asynchronous Method called inside the constructor
+     */
+    private async init(): Promise<void> {
+        try {
+            // Get the names of all Channels
+            const channels = await this.channels.updateChannels();
 
-                        // Connect client
-                        this.client.connect();
+            signale.success("Received the names of all Channels");
+            signale.info(channels);
 
-                        // Handle `connected` event
-                        this.client.on("connected", () => {
-                            signale.success("Successfully connected to Twitch");
-                        });
-
-                        // Handle `message` event
-                        this.client.on("message", (channel: string, tags: any, message: string) => {
-                            this.handler.handle(channel, message, tags.username, this.client);
-                        });
-                    })
-                    .catch((error) => {
-                        signale.fatal("Error getting initial channel list, exiting");
-                        signale.fatal(error);
-                    });
-            })
-            .catch((error) => {
-                signale.fatal("Error making initial Firestore connection, exiting");
-                signale.fatal(error);
+            // Create new Twitch Client and join all Channels
+            this.client = tmi.Client({
+                channels,
+                connection: {
+                    reconnect: true,
+                    secure: true,
+                },
+                identity: {
+                    username: environment.twitch.username,
+                    password: environment.twitch.auth,
+                },
             });
+
+            // Connect Client
+            this.client.connect();
+
+            // Handle `connected` Event
+            this.client.on("connected", () => {
+                signale.success("Twitch Client connected");
+            });
+
+            // Handle `message` Event
+            this.client.on("message", (channel: string, tags: any, message: string) => {
+                this.handler.handle(channel, message, tags.username, this.client);
+            });
+        } catch (error) {
+            signale.error("An error occurred during initial setup");
+            signale.error(error);
+
+            // Throw Error (will not be caught and instead handed to Sentry)
+            throw new Error("An error occurred during initial setup");
+        }
     }
 }

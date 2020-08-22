@@ -1,41 +1,53 @@
 import { Song } from "../interfaces/song.interface";
-import { Firestore } from "./firestore";
 import { environment } from "../environment";
-import got from "got";
 import signale from "signale";
+import { GraphQLClient, gql } from "graphql-request";
 
 export class Identifier {
-    constructor(public firestore: Firestore) {}
+    private gql: GraphQLClient;
+
+    constructor() {
+        // Initialize new GraphQL Client
+        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+    }
 
     /**
      * Request song identification for given channel
      * @param channel Name of the channel to request song identification for
      */
-    public identify(channel: string): Promise<Song[]> {
-        return new Promise((resolve, reject) => {
-            got(`https://api.adams.sh/music-id/id/${channel}`, {
-                retry: 0,
-                responseType: "json",
-                resolveBodyOnly: true,
-                headers: {
-                    apikey: environment.apikey,
-                },
-            })
-                .then((response: any) => {
-                    // Reject if any errors occurr
-                    if (!response || response.status !== "success") {
-                        signale.error(`Error identifying songs`);
-                        signale.error(response);
-
-                        reject("Error identifying songs");
+    public async nowPlaying(channelName: string): Promise<Song[]> {
+        // GraphQL Query to get currently playing Songs for Channel
+        const query = gql`
+            query {
+                nowPlaying(request: { channelName: "${channelName}" }) {
+                    title
+                    artist
+                    album
+                    label
+                    timecode
+                    urls {
+                        spotify
+                        deezer
+                        youtube
                     }
+                }
+            }
+        `;
 
-                    // Resolve found songs
-                    resolve(response.data);
-                })
-                .catch((err) => {
-                    reject(`Error identifying songs, status code ${err.response.statusCode}`);
-                });
-        });
+        try {
+            // Perform Query
+            const response = await this.gql.request(query);
+
+            signale.info(`Found ${response.nowPlaying.length} Songs playing in Channel ${channelName}`);
+
+            // Return found Songs
+            return response.nowPlaying || [];
+        } catch (error) {
+            signale.error(`Error getting Songs for Channel ${channelName}`);
+            signale.error(error);
+
+            // Throw Error
+            throw new Error(`Error gettings Songs for Channel ${channelName}`);
+        }
     }
 }
