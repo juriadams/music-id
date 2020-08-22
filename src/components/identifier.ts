@@ -15,11 +15,14 @@ export class Identifier {
      * Request song identification for given channel
      * @param channel Name of the channel to request song identification for
      */
-    public async nowPlaying(channelName: string): Promise<Song[]> {
+    public async nowPlaying(channelName: string, requester: string, message: string): Promise<Song[]> {
         // GraphQL Query to get currently playing Songs for Channel
         const query = gql`
             query {
-                nowPlaying(request: { channelName: "${channelName}" }) {
+                nowPlaying(request: { channelName: "${channelName}", requester: "${requester}", message: "${message.replace(
+            '"',
+            "_",
+        )}" }) {
                     title
                     artist
                     album
