@@ -27,3 +27,14 @@ const handler = new MessageHandler(channels, composer, identifier);
  * Create new Twitch Client
  */
 const client = new TwitchClient(channels, handler);
+
+/**
+ * Create a basic Express App to run monitoring checks against
+ */
+import express from "express";
+
+express()
+    .get("/", (req, res) => {
+        res.send("I'm alive!");
+    })
+    .listen(3001);
