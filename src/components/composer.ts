@@ -7,6 +7,24 @@ export class MessageComposer {
     constructor(private channels: Channels) {}
 
     /**
+     * Get a specific MessageTemplate for a Channel
+     * @param channelName Name of the Channel to get the MessageTemplate for
+     * @param type Type of the MessageTemplate to get
+     */
+    private getMessageTemplate(
+        channelName: string,
+        type: "SUCCESS" | "COOLDOWN" | "COOLDOWN_WITH_ID" | "ERROR",
+    ): string {
+        // Get MessageTemplate for specified type
+        const template = this.channels.channels[channelName].messageTemplates.find(
+            (template) => template.type === type,
+        );
+
+        // Return MessageTemplate
+        return template ? template.template : "";
+    }
+
+    /**
      * Returns success message when a song was successfully identified
      *
      * %REQUESTER% - Person who requested the command
@@ -16,12 +34,12 @@ export class MessageComposer {
      * %URL% - URL to the song
      */
     public success(channel: string, requester: string, song: Song): string {
-        return this.channels.channels[channel].messageTemplates.success
+        return this.getMessageTemplate(channel, "SUCCESS")
             .replace("%REQUESTER%", requester)
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", song.artist)
             .replace("%TIMECODE%", song.timecode)
-            .replace("%URL%", song.url);
+            .replace("%URL%", ""); // FIXME: Add url back after handling was updated
     }
 
     /**
@@ -33,15 +51,15 @@ export class MessageComposer {
      * %URL% - URL to the song
      * %REMAINING% - Remaining seconds until command can be used again
      */
-    public cooldown(channel: string, requester: string, remaining: number, lastAttempt: Identification): string {
-        return lastAttempt.songs[0]
-            ? this.channels.channels[channel].messageTemplates.cooldownWithId
+    public cooldown(channel: string, requester: string, remaining: number, lastAttempt?: Identification): string {
+        return lastAttempt && lastAttempt.songs[0]
+            ? this.getMessageTemplate(channel, "COOLDOWN_WITH_ID")
                   .replace("%REQUESTER%", requester)
                   .replace("%TITLE%", lastAttempt.songs[0].title)
                   .replace("%ARTIST%", lastAttempt.songs[0].artist)
                   .replace("%TIME%", moment(lastAttempt.timestamp).fromNow())
-                  .replace("%URL%", lastAttempt.songs[0].url)
-            : this.channels.channels[channel].messageTemplates.cooldown
+                  .replace("%URL%", "") // FIXME: Add url back after handling was updated
+            : this.getMessageTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
                   .replace("%REMAINING%", remaining.toString());
     }
@@ -50,10 +68,10 @@ export class MessageComposer {
      * Returns a message when no song could be identified
      *
      * %REQUESTER% - Person who requested the command
-     * %ERROR% - Error message why no could be identified
+     * %ERROR% - Error message why no Song could be identified
      */
     public error(channel: string, requester: string, errorMessage?: string): string {
-        return this.channels.channels[channel].messageTemplates.error
+        return this.getMessageTemplate(channel, "ERROR")
             .replace("%REQUESTER%", requester)
             .replace("%ERROR%", errorMessage || "");
     }

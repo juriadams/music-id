@@ -1,20 +1,21 @@
 import { environment } from "../environment";
-import { Firestore } from "./firestore";
 import { MessageComposer } from "./composer";
 import { Channels } from "./channels";
 import { Identifier } from "./identifier";
 import signale from "signale";
-import moment from "moment";
 import * as tmi from "tmi.js";
-import got from "got/dist/source";
+import { GraphQLClient, gql } from "graphql-request";
 
 export class MessageHandler {
-    constructor(
-        private firestore: Firestore,
-        private channels: Channels,
-        private composer: MessageComposer,
-        private identifier: Identifier,
-    ) {}
+    /**
+     * GraphQL Client Instance
+     */
+    private gql: GraphQLClient;
+
+    constructor(private channels: Channels, private composer: MessageComposer, private identifier: Identifier) {
+        // Initialize new GraphQL Client
+        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+    }
 
     /**
      * Helper function to remove command name and split message into arguments
@@ -31,67 +32,20 @@ export class MessageHandler {
      * @param sender Name of the message sender
      * @param client Twitch client instance
      */
-    public handle(channel: string, message: string, sender: string, client: tmi.Client) {
-        // Remove leading `#` from channel names
-        channel = channel.replace("#", "");
-
-        // Transform message into lowerCase
+    public handle(channelName: string, message: string, sender: string, client: tmi.Client) {
+        // Fix Channel name and make message lowercase
+        channelName = channelName.replace("#", "");
         message = message.toLowerCase();
 
-        // Stats command temporarily disabled due to it generating too much cost
-        // if (message.startsWith("!stats")) {
-        //     return this.handleStats(channel, message, sender, client);
-        // }
-
+        // Handle Mentions
         if (environment.mentionTriggers.some((trigger) => message.includes(trigger))) {
-            this.handleMention(channel, message, sender);
+            this.handleMention(channelName, message, sender);
         }
 
-        if (this.channels.channels[channel].triggers.some((trigger) => message.includes(trigger))) {
-            this.handleSongIdentification(channel, message, sender, client);
+        // Handle Identification requests
+        if (this.channels.channels[channelName].triggers.some((trigger) => message.includes(trigger.keyword))) {
+            this.handleSongIdentification(channelName, sender, client);
         }
-    }
-
-    /**
-     * Handle stats command, replying with stats for either current or given channel
-     * @param channel Channel the command was sent in
-     * @param message Message including the command
-     * @param sender Name of the message sender
-     * @param client Twitch client instance
-     */
-    public handleStats(channel: string, message: string, sender: string, client: tmi.Client): void {
-        // Split message into args and get target channel
-        const args = this.getArgs(message);
-        const target = args[0] ? args[0].replace("@", "") : channel;
-
-        signale.start(`Requested stats for channel "${target}"`);
-        got(`https://api.adams.sh/music-id/stats/${target}`, {
-            retry: 0,
-            responseType: "json",
-            resolveBodyOnly: true,
-            headers: {
-                apikey: environment.apikey,
-            },
-        })
-            .then((response: any) => {
-                signale.success(`Received stats for channel "${target}"`);
-                signale.info(response);
-
-                // Reply with stats
-                client.action(
-                    channel,
-                    target === "all"
-                        ? `@${sender} | ${response.data.successful} out of ${response.data.total} requests successful across all channels. (${response.data.percent}%)`
-                        : `@${sender} | ${response.data.successful} out of ${response.data.total} requests successful in channel "${target}". (${response.data.percent}%)`,
-                );
-            })
-            .catch((error) => {
-                signale.error(`Error getting Stats for channel "${target}"`);
-                signale.error(error);
-
-                // Reply with error message
-                client.action(channel, `@${sender} | Error getting channel stats`);
-            });
     }
 
     /**
@@ -99,122 +53,100 @@ export class MessageHandler {
      * @param channel Channel the bot was mentioned in
      * @param message Message including the keyword
      * @param sender Name of the message sender
-     *
-     * TODO: Add Discord integration (webhook or bot?)
      */
-    public handleMention(channel: string, message: string, sender: string): void {
-        // Store mention of the bot inside database
-        this.firestore.admin.collection("mentions").add({
-            channel,
-            message,
-            sender,
-            timestamp: moment().utc(),
-        });
+    public async handleMention(channelName: string, message: string, sender: string): Promise<void> {
+        // GraphQL Query to get Id of the Channel
+        const query = gql`
+            query {
+                channel(channelName: "${channelName}") {
+                    id
+                }
+            }
+        `;
+
+        // Perform Query to get Id of the Channel
+        const channel = await this.gql.request(query);
+
+        // GraphQL Query to insert the Mention
+        const mutation = gql`
+            mutation {
+                createMention(
+                    mention: {
+                        channelId: ${channel.channel.id}
+                        message: "${message}"
+                        sender: "${sender}"
+                        timestamp: "${new Date()}"
+                    }
+                ) {
+                    channelId
+                    message
+                    sender
+                    timestamp
+                }
+            }
+        `;
+
+        // Perform Query to insert Mention
+        await this.gql.request(mutation);
     }
 
-    public handleSongIdentification(channel: string, message: string, sender: string, client: tmi.Client): void {
-        // Check if channel already has a pending identification to avoid duplicate requests
-        if (this.channels.pendingChannels.includes(channel)) {
-            return signale.debug(`Itendification for channel "${channel} already in progress, skipping request..."`);
+    /**
+     * Handle Song identification Requests
+     * @param channelName Name of the Channel currently playing Songs were requested for
+     * @param requester Name of the Person who requested the Songs
+     * @param client Twitch Client instance used to reply with
+     */
+    public async handleSongIdentification(channelName: string, requester: string, client: tmi.Client): Promise<void> {
+        // Check if Channel already has an Idenfiticaion pending
+        if (this.channels.pendingChannels.includes(channelName)) {
+            return signale.debug(`Itendification for Channel ${channelName} already in progress`);
         }
 
-        // Check if channel is currently on cooldown and continue accordingly
-        this.channels
-            .isOnCooldown(channel)
-            .then((lastAttempt) => {
-                // Calculate time since last identification request and transform into `seconds`
-                const sinceLastRequest = moment().diff(moment(lastAttempt.timestamp), "seconds");
+        // Check if Channel is currently on cooldown
+        const cooldown = await this.channels.isOnCooldown(channelName);
 
-                // Calculate time until next possible identification request
-                const untilNext = this.channels.channels[channel].cooldown - sinceLastRequest;
+        if (cooldown.onCooldown) {
+            // Check if cooldown message was already sent
+            if (this.channels.cooldownMessageSent.includes(channelName)) {
+                signale.info(`Cooldown message was already sent in Channel ${channelName}`);
+            } else {
+                signale.info(`Sending cooldown message in Channel ${channelName}`);
+                this.channels.cooldownMessageSent.push(channelName);
 
-                signale.debug(
-                    `Channel "${channel} is still on cooldown, waiting ${untilNext} seconds before allowing next request`,
+                signale.info(
+                    this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
                 );
 
-                // Check if cooldown message was already sent
-                if (this.channels.cooldownMessageSent.includes(channel)) {
-                    signale.debug(`Cooldown message was already sent in channel "${channel}", not sending message`);
-                } else {
-                    signale.debug(`Sending cooldown warning message in channel "${channel}"`);
-
-                    this.channels.cooldownMessageSent.push(channel);
-                    client.say(channel, this.composer.cooldown(channel, sender, untilNext, lastAttempt));
-                }
-            })
-            .catch(() => {
-                // Mark channel as `pending`
-                this.channels.pendingChannels.push(channel);
-
-                // Get array of triggers matched in message, used for analytics
-                const triggers = this.channels.channels[channel].triggers.filter((trigger) =>
-                    message.toLowerCase().includes(trigger),
+                // signale.info(
+                //     "Sending message:",
+                //     this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
+                // );
+                client.say(
+                    channelName,
+                    this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
                 );
+            }
+        } else {
+            // Add Channel to currently pending Channels
+            this.channels.pendingChannels.push(channelName);
 
-                signale.start(`Identifying song in channel "${channel}"...`);
+            // Get Songs playing in Channel
+            const songs = await this.identifier.nowPlaying(channelName);
 
-                // Start identifying songs in channel
-                this.identifier
-                    .identify(channel)
-                    .then((songs) => {
-                        // Reset `pending` and `cooldownMessageSent` states for channel
-                        this.channels.pendingChannels = this.channels.pendingChannels.filter((c) => c !== channel);
-                        this.channels.cooldownMessageSent = this.channels.cooldownMessageSent.filter(
-                            (c) => c !== channel,
-                        );
+            // Remove Channel from pending and cooldownMessageSent Channels
+            this.channels.pendingChannels = this.channels.pendingChannels.filter((channel) => channel !== channelName);
+            this.channels.cooldownMessageSent = this.channels.cooldownMessageSent.filter(
+                (channel) => channel !== channelName,
+            );
 
-                        signale.success(`Found ${songs.length} songs playing in channel ${channel}`);
-
-                        // Add Itentification result to database
-                        this.firestore.admin.collection("identifications").add({
-                            channel,
-                            matchedTriggers: triggers,
-                            message,
-                            requester: sender,
-                            response: {
-                                code: 200,
-                                message: "Found song",
-                            },
-                            success: true,
-                            songs: songs,
-                            timestamp: moment().format(),
-                        });
-
-                        // Check if songs array is empty
-                        if (songs && songs.length > 0) {
-                            client.say(channel, this.composer.success(channel, sender, songs[0]));
-                        } else {
-                            client.say(channel, this.composer.error(channel, sender, "No songs found"));
-                        }
-                    })
-                    .catch((error) => {
-                        // Reset `pending` and `cooldownMessageSent` states for channel
-                        this.channels.pendingChannels = this.channels.pendingChannels.filter((c) => c !== channel);
-                        this.channels.cooldownMessageSent = this.channels.cooldownMessageSent.filter(
-                            (c) => c !== channel,
-                        );
-
-                        // Add Itentification result to database
-                        this.firestore.admin.collection("identifications").add({
-                            channel,
-                            matchedTriggers: triggers,
-                            message,
-                            requester: sender,
-                            response: {
-                                code: 404,
-                                message: "No song found",
-                            },
-                            success: false,
-                            songs: null,
-                            timestamp: moment().format(),
-                        });
-
-                        signale.warn(`Found no songs playing in channel ${channel}`);
-                        signale.warn(error);
-
-                        // Send error message in chat
-                        client.say(channel, this.composer.error(channel, sender, error));
-                    });
-            });
+            // Send response in Twitch chat
+            if (songs.length > 0) {
+                // signale.info("Sending message:", this.composer.success(channelName, requester, songs[0]));
+                client.say(channelName, this.composer.success(channelName, requester, songs[0]));
+            } else {
+                // signale.info("Sending message:", this.composer.error(channelName, requester, "No Songs were found"));
+                client.say(channelName, this.composer.error(channelName, requester, "No Songs were found"));
+            }
+        }
     }
 }

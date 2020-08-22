@@ -1,8 +1,9 @@
-import { Firestore } from "./firestore";
 import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
+import { gql, GraphQLClient } from "graphql-request";
 import signale from "signale";
 import moment from "moment";
+import { environment } from "../environment";
 
 export class Channels {
     /**
@@ -22,93 +23,122 @@ export class Channels {
      */
     public cooldownMessageSent: string[] = [];
 
-    constructor(public firestore: Firestore) {}
+    /**
+     * GraphQL Client Instance
+     */
+    private gql: GraphQLClient;
+
+    constructor() {
+        // Initialize new GraphQL Client
+        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+    }
 
     /**
      * Get list of all available channels
      */
-    public getChannels(): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            signale.start("Getting list of channels...");
-            this.firestore.admin
-                .collection("channels")
-                .get()
-                .then((snapshot) => {
-                    // If snapshot is empty
-                    if (snapshot.empty) {
-                        signale.error("No channels found, aborting");
-                        reject("No channels found, aborting");
+    public async updateChannels(): Promise<string[]> {
+        // Channels GraphQL Query
+        const query = gql`
+            query {
+                channels {
+                    id
+                    cooldown
+                    channelName
+                    active
+                    messageTemplates {
+                        type
+                        template
                     }
+                    triggers {
+                        keyword
+                    }
+                }
+            }
+        `;
 
-                    // Iterate over channel documents and store them inside this service
-                    snapshot.forEach((doc) => {
-                        const channel: any = doc.data();
-                        this.channels[channel.channelName] = channel;
-                    });
+        try {
+            // Query Channels
+            const response = await this.gql.request(query);
 
-                    // Resolve array of channel names, their full data is accessible inside this Class
-                    resolve(Object.keys(this.channels));
-                })
-                .catch((err) => {
-                    signale.error("Error getting list of channels");
-                    reject("Error getting list of channels");
-                });
-        });
+            // Map Channels down to their names
+            return response.channels.map((channel: Channel) => {
+                // Store Channel in memory
+                this.channels[channel.channelName] = channel;
+
+                // Return channelName
+                return channel.channelName;
+            });
+        } catch (error) {
+            signale.error("Error getting Channels");
+            signale.error(error);
+
+            // Throw Error
+            throw new Error("Error getting Channels");
+        }
     }
 
     /**
-     * Check if a channel is on cooldown
-     * @param channel Name of the channel to check
+     * Check if a Channel is on cooldown
+     * @param channelName Name of the channel to check
      */
-    public isOnCooldown(channel: string): Promise<Identification> {
-        return new Promise((resolve, reject) => {
-            signale.debug(`Checking cooldown for channel ${channel}...`);
-
-            // Query to get last song identification attempt
-            const lastAttemptQuery = this.firestore.admin
-                .collection("identifications")
-                .where("channel", "==", channel)
-                .orderBy("timestamp", "desc")
-                .limit(1);
-
-            // Get last song identification attempt and calculate remaining seconds
-            lastAttemptQuery
-                .get()
-                .then((snapshot) => {
-                    // If no entry was found
-                    if (snapshot.empty) {
-                        signale.warn(`No song identification requests found for channel "${channel}"`);
-                        reject(`No song identification requests found for channel "${channel}"`);
+    public async isOnCooldown(
+        channelName: string,
+    ): Promise<{ onCooldown: boolean; sinceLast?: number; untilNext?: number; identification?: Identification }> {
+        // Specific Channel GraphQL Query
+        const query = gql`
+            query {
+                channel(channelName: "${channelName}") {
+                    latestIdentification {
+                        timestamp
                     }
+                }
+            }
+        `;
 
-                    // @ts-ignore
-                    const lastAttempt: Identification = snapshot.docs[0].data();
+        try {
+            // Perform Query and get its response
+            const response = await this.gql.request(query);
 
-                    // Calculate time since last identification request and transform into `seconds`
-                    const sinceLastRequest = moment().diff(moment(lastAttempt.timestamp), "seconds");
+            if (response.channel.latestIdentification) {
+                // Calculate seconds since last Identification
+                const sinceLast = moment().diff(
+                    moment(Number(response.channel.latestIdentification.timestamp)),
+                    "seconds",
+                );
 
-                    // Boolean if channel is on cooldown
-                    const isOnCooldown = sinceLastRequest < this.channels[channel].cooldown;
+                // Calculate seconds remaining until next possible Identification
+                const untilNext = this.channels[channelName].cooldown - sinceLast;
 
-                    signale.debug(
-                        isOnCooldown
-                            ? `Channel "${channel} is on cooldown, ${sinceLastRequest} seconds since last request"`
-                            : `Channel "${channel} is NOT on cooldown, ${sinceLastRequest} seconds since last request"`,
-                    );
+                // Check if Channel is on cooldown
+                const onCooldown = sinceLast < this.channels[channelName].cooldown;
 
-                    // Resolve or reject depending if channel is on cooldown
-                    if (isOnCooldown) {
-                        resolve(lastAttempt);
-                    } else {
-                        reject(`Channel "${channel}" is not on cooldown`);
-                    }
-                })
-                .catch((error) => {
-                    signale.error("Error getting last identification");
-                    signale.error(error);
+                signale.info(
+                    `${sinceLast} seconds passed since last Identification in Channel ${channelName} (${
+                        onCooldown ? "on cooldown" : "not on cooldown"
+                    })`,
+                );
 
-                    reject("Error getting last identification");
-                });
-        });
+                return {
+                    onCooldown,
+                    sinceLast,
+                    untilNext,
+                    identification: response.channel.latestIdentification,
+                };
+            } else {
+                signale.warn("No `latestIdentification` found for requested Channel, returning `onCooldown = false`");
+                return {
+                    onCooldown: false,
+                    sinceLast: undefined,
+                    untilNext: undefined,
+                    identification: undefined,
+                };
+            }
+        } catch (error) {
+            signale.error(`Error getting latestIdentification for Channel ${channelName}`);
+            signale.error(error);
+
+            // Throw Error
+            throw new Error(`Error getting latestIdentification for Channel ${channelName}`);
+        }
     }
 }
