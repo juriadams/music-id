@@ -90,6 +90,11 @@ export class Channels {
                 channel(channelName: "${channelName}") {
                     latestIdentification {
                         timestamp
+                        songs {
+                            title
+                            artist
+                            timecode
+                        }
                     }
                 }
             }

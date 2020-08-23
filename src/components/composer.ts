@@ -51,13 +51,18 @@ export class MessageComposer {
      * %URL% - URL to the song
      * %REMAINING% - Remaining seconds until command can be used again
      */
-    public cooldown(channel: string, requester: string, remaining: number, lastAttempt?: Identification): string {
-        return lastAttempt && lastAttempt.songs[0]
+    public cooldown(
+        channel: string,
+        requester: string,
+        remaining: number,
+        latestIdentification?: Identification,
+    ): string {
+        return latestIdentification && latestIdentification.songs && latestIdentification.songs[0]
             ? this.getMessageTemplate(channel, "COOLDOWN_WITH_ID")
                   .replace("%REQUESTER%", requester)
-                  .replace("%TITLE%", lastAttempt.songs[0].title)
-                  .replace("%ARTIST%", lastAttempt.songs[0].artist)
-                  .replace("%TIME%", moment(lastAttempt.timestamp).fromNow())
+                  .replace("%TITLE%", latestIdentification.songs[0].title)
+                  .replace("%ARTIST%", latestIdentification.songs[0].artist)
+                  .replace("%TIME%", moment(latestIdentification.timestamp).fromNow())
                   .replace("%URL%", "") // FIXME: Add url back after handling was updated
             : this.getMessageTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
