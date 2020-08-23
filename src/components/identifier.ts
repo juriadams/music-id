@@ -1,12 +1,12 @@
 import { Song } from "../interfaces/song.interface";
 import { environment } from "../environment";
-import signale from "signale";
 import { GraphQLClient, gql } from "graphql-request";
+import { Logger } from "./logger";
 
 export class Identifier {
     private gql: GraphQLClient;
 
-    constructor() {
+    constructor(private logger: Logger) {
         // Initialize new GraphQL Client
         this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
     }
@@ -41,13 +41,13 @@ export class Identifier {
             // Perform Query
             const response = await this.gql.request(query);
 
-            signale.info(`Found ${response.nowPlaying.length} Songs playing in Channel ${channelName}`);
+            this.logger.signale.info(`Found ${response.nowPlaying.length} Songs playing in Channel ${channelName}`);
 
             // Return found Songs
             return response.nowPlaying || [];
         } catch (error) {
-            signale.error(`Error getting Songs for Channel ${channelName}`);
-            signale.error(error);
+            this.logger.signale.error(`Error getting Songs for Channel ${channelName}`);
+            this.logger.signale.error(error);
 
             // Throw Error
             throw new Error(`Error gettings Songs for Channel ${channelName}`);

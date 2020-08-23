@@ -2,9 +2,10 @@ import { Channels } from "./channels";
 import { Song } from "../interfaces/song.interface";
 import { Identification } from "../interfaces/identification.interface";
 import moment from "moment";
+import { Logger } from "./logger";
 
 export class MessageComposer {
-    constructor(private channels: Channels) {}
+    constructor(private logger: Logger, private channels: Channels) {}
 
     /**
      * Get a specific MessageTemplate for a Channel

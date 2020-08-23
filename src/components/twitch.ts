@@ -1,8 +1,8 @@
 import { environment } from "../environment";
 import { Channels } from "./channels";
 import { MessageHandler } from "./message-handler";
-import signale from "signale";
 import * as tmi from "tmi.js";
+import { Logger } from "./logger";
 
 export class TwitchClient {
     /**
@@ -11,7 +11,7 @@ export class TwitchClient {
     // @ts-ignore Client will be initialized asynchronous after the Channels are loaded
     public client: tmi.Client;
 
-    constructor(private channels: Channels, private handler: MessageHandler) {
+    constructor(private logger: Logger, private channels: Channels, private handler: MessageHandler) {
         this.init();
     }
 
@@ -23,8 +23,8 @@ export class TwitchClient {
             // Get the names of all Channels
             const channels = await this.channels.updateChannels();
 
-            signale.success("Received the names of all Channels");
-            signale.info(channels);
+            this.logger.signale.success("Received the names of all Channels");
+            this.logger.signale.info(channels);
 
             // Create new Twitch Client and join all Channels
             this.client = tmi.Client({
@@ -44,7 +44,7 @@ export class TwitchClient {
 
             // Handle `connected` Event
             this.client.on("connected", () => {
-                signale.success("Twitch Client connected");
+                this.logger.signale.success("Twitch Client connected");
             });
 
             // Handle `message` Event
@@ -52,8 +52,8 @@ export class TwitchClient {
                 this.handler.handle(channel, message, tags.username, this.client);
             });
         } catch (error) {
-            signale.error("An error occurred during initial setup");
-            signale.error(error);
+            this.logger.signale.error("An error occurred during initial setup");
+            this.logger.signale.error(error);
 
             // Throw Error (will not be caught and instead handed to Sentry)
             throw new Error("An error occurred during initial setup");

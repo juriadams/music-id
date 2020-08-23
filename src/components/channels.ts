@@ -1,9 +1,10 @@
 import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
 import { gql, GraphQLClient } from "graphql-request";
-import signale from "signale";
+import { Signale } from "signale";
 import moment from "moment";
 import { environment } from "../environment";
+import { Logger } from "./logger";
 
 export class Channels {
     /**
@@ -28,7 +29,7 @@ export class Channels {
      */
     private gql: GraphQLClient;
 
-    constructor() {
+    constructor(private logger: Logger) {
         // Initialize new GraphQL Client
         this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
     }
@@ -69,8 +70,8 @@ export class Channels {
                 return channel.channelName;
             });
         } catch (error) {
-            signale.error("Error getting Channels");
-            signale.error(error);
+            this.logger.signale.error("Error getting Channels");
+            this.logger.signale.error(error);
 
             // Throw Error
             throw new Error("Error getting Channels");
@@ -117,7 +118,7 @@ export class Channels {
                 // Check if Channel is on cooldown
                 const onCooldown = sinceLast < this.channels[channelName].cooldown;
 
-                signale.info(
+                this.logger.signale.info(
                     `${sinceLast} seconds passed since last Identification in Channel ${channelName} (${
                         onCooldown ? "on cooldown" : "not on cooldown"
                     })`,
@@ -130,7 +131,9 @@ export class Channels {
                     identification: response.channel.latestIdentification,
                 };
             } else {
-                signale.warn("No `latestIdentification` found for requested Channel, returning `onCooldown = false`");
+                this.logger.signale.warn(
+                    "No `latestIdentification` found for requested Channel, returning `onCooldown = false`",
+                );
                 return {
                     onCooldown: false,
                     sinceLast: undefined,
@@ -139,8 +142,8 @@ export class Channels {
                 };
             }
         } catch (error) {
-            signale.error(`Error getting latestIdentification for Channel ${channelName}`);
-            signale.error(error);
+            this.logger.signale.error(`Error getting latestIdentification for Channel ${channelName}`);
+            this.logger.signale.error(error);
 
             // Throw Error
             throw new Error(`Error getting latestIdentification for Channel ${channelName}`);

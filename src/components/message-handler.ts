@@ -1,10 +1,11 @@
 import { gql, GraphQLClient } from "graphql-request";
-import signale from "signale";
+import { Signale } from "signale";
 import * as tmi from "tmi.js";
 import { environment } from "../environment";
 import { Channels } from "./channels";
 import { MessageComposer } from "./composer";
 import { Identifier } from "./identifier";
+import { Logger } from "./logger";
 
 export class MessageHandler {
     /**
@@ -12,7 +13,12 @@ export class MessageHandler {
      */
     private gql: GraphQLClient;
 
-    constructor(private channels: Channels, private composer: MessageComposer, private identifier: Identifier) {
+    constructor(
+        private logger: Logger,
+        private channels: Channels,
+        private composer: MessageComposer,
+        private identifier: Identifier,
+    ) {
         // Initialize new GraphQL Client
         this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
     }
@@ -44,7 +50,7 @@ export class MessageHandler {
 
         // FIXME: Handle not found Channels, needs investigation
         if (!this.channels.channels[channelName]) {
-            return signale.fatal(`Could not find Triggers for Channel ${channelName}`);
+            return this.logger.signale.fatal(`Could not find Triggers for Channel ${channelName}`);
         }
 
         // Handle Identification requests
@@ -91,6 +97,8 @@ export class MessageHandler {
             }
         `;
 
+        this.logger.signale.info(`Adding new Mention by ${sender} to database`);
+
         // Perform Query to insert Mention
         await this.gql.request(mutation);
     }
@@ -109,7 +117,7 @@ export class MessageHandler {
     ): Promise<void> {
         // Check if Channel already has an Idenfiticaion pending
         if (this.channels.pendingChannels.includes(channelName)) {
-            return signale.debug(`Itendification for Channel ${channelName} already in progress`);
+            return this.logger.signale.info(`Itendification for Channel ${channelName} already in progress`);
         }
 
         // Check if Channel is currently on cooldown
@@ -118,19 +126,14 @@ export class MessageHandler {
         if (cooldown.onCooldown) {
             // Check if cooldown message was already sent
             if (this.channels.cooldownMessageSent.includes(channelName)) {
-                signale.info(`Cooldown message was already sent in Channel ${channelName}`);
+                this.logger.signale.info(`Cooldown message was already sent in Channel ${channelName}`);
             } else {
-                signale.info(`Sending cooldown message in Channel ${channelName}`);
+                this.logger.signale.info(`Sending cooldown message in Channel ${channelName}`);
                 this.channels.cooldownMessageSent.push(channelName);
 
-                signale.info(
+                this.logger.signale.message(
                     this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
                 );
-
-                // signale.info(
-                //     "Sending message:",
-                //     this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
-                // );
                 client.say(
                     channelName,
                     this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
@@ -151,11 +154,11 @@ export class MessageHandler {
 
             // Send response in Twitch chat
             if (songs.length > 0) {
-                // signale.info("Sending message:", this.composer.success(channelName, requester, songs[0]));
+                this.logger.signale.message(this.composer.success(channelName, requester, songs[0]));
                 client.say(channelName, this.composer.success(channelName, requester, songs[0]));
             } else {
-                // signale.info("Sending message:", this.composer.error(channelName, requester, "No Songs were found"));
-                client.say(channelName, this.composer.error(channelName, requester, "No Songs were found"));
+                this.logger.signale.message(this.composer.error(channelName, requester, "No Songs found"));
+                client.say(channelName, this.composer.error(channelName, requester, "No Songs found"));
             }
         }
     }
