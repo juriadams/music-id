@@ -24,6 +24,6 @@
         "@types/moment": "^2.13.0",
         "@types/node": "^12.12.54",
         "@types/signale": "^1.2.1",
-        "@types/tmi.js": "^1.4.0"
+        "@types/tmi.js": "^1.4.1"
     }
 }
