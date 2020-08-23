@@ -10,7 +10,7 @@
     "author": "Juri Adams <juri@4da.ms>",
     "license": "MIT",
     "dependencies": {
-        "@sentry/node": "^5.10.1",
+        "@sentry/node": "^5.21.3",
         "express": "^4.17.1",
         "graphql": "^15.3.0",
         "graphql-request": "^3.0.0",
@@ -22,8 +22,8 @@
     "devDependencies": {
         "@types/express": "^4.17.7",
         "@types/moment": "^2.13.0",
-        "@types/node": "^12.12.14",
+        "@types/node": "^12.12.54",
         "@types/signale": "^1.4.1",
-        "@types/tmi.js": "^1.4.0"
+        "@types/tmi.js": "^1.4.1"
     }
 }
