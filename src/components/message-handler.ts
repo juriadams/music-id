@@ -1,10 +1,10 @@
-import { environment } from "../environment";
-import { MessageComposer } from "./composer";
-import { Channels } from "./channels";
-import { Identifier } from "./identifier";
+import { gql, GraphQLClient } from "graphql-request";
 import signale from "signale";
 import * as tmi from "tmi.js";
-import { GraphQLClient, gql } from "graphql-request";
+import { environment } from "../environment";
+import { Channels } from "./channels";
+import { MessageComposer } from "./composer";
+import { Identifier } from "./identifier";
 
 export class MessageHandler {
     /**
