@@ -11,7 +11,7 @@ export class Logger {
         types: {
             message: {
                 badge: "💬",
-                color: "purple",
+                color: "red",
                 label: "message",
             },
         },
