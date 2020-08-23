@@ -1,8 +1,8 @@
+import * as tmi from "tmi.js";
 import { environment } from "../environment";
 import { Channels } from "./channels";
-import { MessageHandler } from "./message-handler";
-import * as tmi from "tmi.js";
 import { Logger } from "./logger";
+import { MessageHandler } from "./message-handler";
 
 export class TwitchClient {
     /**
