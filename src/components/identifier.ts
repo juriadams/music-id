@@ -1,7 +1,7 @@
-import { Song } from "../interfaces/song.interface";
-import { environment } from "../environment";
+import { gql, GraphQLClient } from "graphql-request";
 import signale from "signale";
-import { GraphQLClient, gql } from "graphql-request";
+import { environment } from "../environment";
+import { Song } from "../interfaces/song.interface";
 
 export class Identifier {
     private gql: GraphQLClient;
@@ -20,7 +20,7 @@ export class Identifier {
         const query = gql`
             query {
                 nowPlaying(request: { channelName: "${channelName}", requester: "${requester}", message: "${message.replace(
-            '"',
+            "\"",
             "_",
         )}" }) {
                     title
