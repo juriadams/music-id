@@ -42,6 +42,11 @@ export class MessageHandler {
             this.handleMention(channelName, message, sender);
         }
 
+        // FIXME: Handle not found Channels, needs investigation
+        if (!this.channels.channels[channelName]) {
+            return signale.fatal(`Could not find Triggers for Channel ${channelName}`);
+        }
+
         // Handle Identification requests
         if (this.channels.channels[channelName].triggers.some((trigger) => message.includes(trigger.keyword))) {
             this.handleSongIdentification(channelName, sender, message, client);
