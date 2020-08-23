@@ -62,7 +62,7 @@ export class MessageComposer {
                   .replace("%REQUESTER%", requester)
                   .replace("%TITLE%", latestIdentification.songs[0].title)
                   .replace("%ARTIST%", latestIdentification.songs[0].artist)
-                  .replace("%TIME%", moment(latestIdentification.timestamp).fromNow())
+                  .replace("%TIME%", moment(Number(latestIdentification.timestamp)).fromNow())
                   .replace("%URL%", "") // FIXME: Add url back after handling was updated
             : this.getMessageTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
