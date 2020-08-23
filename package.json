@@ -14,7 +14,7 @@
         "express": "^4.17.1",
         "graphql": "^15.3.0",
         "graphql-request": "^3.0.0",
-        "moment": "^2.24.0",
+        "moment": "^2.27.0",
         "signale": "^1.4.0",
         "tmi.js": "^1.5.0",
         "tslint": "^5.20.1"
