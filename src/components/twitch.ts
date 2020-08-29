@@ -51,6 +51,13 @@ export class TwitchClient {
             this.client.on("message", (channel: string, tags: any, message: string) => {
                 this.handler.handle(channel, message, tags.username, this.client);
             });
+
+            // Catch banned or no response errors
+            this.client.on("notice", (channel: string, notice: string, message: string) => {
+                if (["msg_banned", "No response from Twitch."].includes(notice)) {
+                    this.logger.signale.error(`An error occured in Channel ${channel}: ${notice}, ${message}`);
+                }
+            });
         } catch (error) {
             this.logger.signale.error("An error occurred during initial setup");
             this.logger.signale.error(error);
