@@ -49,8 +49,10 @@ export class Identifier {
             this.logger.signale.error(`Error getting Songs for Channel ${channelName}`);
             this.logger.signale.error(error);
 
-            // Throw Error
-            throw new Error(`Error gettings Songs for Channel ${channelName}`);
+            // Do not throw an Exception, instead, return an empty Array for no found Songs
+            // throw new Error(`Error gettings Songs for Channel ${channelName}`);
+
+            return [];
         }
     }
 }
