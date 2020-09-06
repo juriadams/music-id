@@ -28,11 +28,7 @@ export class Identifier {
                     album
                     label
                     timecode
-                    urls {
-                        spotify
-                        deezer
-                        youtube
-                    }
+                    url
                 }
             }
         `;

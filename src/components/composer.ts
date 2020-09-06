@@ -40,7 +40,7 @@ export class MessageComposer {
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", song.artist)
             .replace("%TIMECODE%", song.timecode)
-            .replace("%URL%", ""); // FIXME: Add url back after handling was updated
+            .replace("%URL%", song.url);
     }
 
     /**
@@ -64,7 +64,7 @@ export class MessageComposer {
                   .replace("%TITLE%", latestIdentification.songs[0].title)
                   .replace("%ARTIST%", latestIdentification.songs[0].artist)
                   .replace("%TIME%", moment(Number(latestIdentification.timestamp)).fromNow())
-                  .replace("%URL%", "") // FIXME: Add url back after handling was updated
+                  .replace("%URL%", latestIdentification.songs[0].url)
             : this.getMessageTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
                   .replace("%REMAINING%", remaining.toString());

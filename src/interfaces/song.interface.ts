@@ -13,4 +13,5 @@ export interface Song {
         deezer: string;
         youtube: string;
     };
+    url: string;
 }
