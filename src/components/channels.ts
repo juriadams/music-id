@@ -116,7 +116,7 @@ export class Channels {
                 const untilNext = this.channels[channelName].cooldown - sinceLast;
 
                 // Check if Channel is on cooldown
-                const onCooldown = sinceLast < this.channels[channelName].cooldown;
+                const onCooldown = sinceLast > 0 && sinceLast < this.channels[channelName].cooldown;
 
                 this.logger.signale.info(
                     `${sinceLast} seconds passed since last Identification in Channel ${channelName} (${
