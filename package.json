@@ -11,6 +11,7 @@
     "license": "MIT",
     "dependencies": {
         "@sentry/node": "^5.22.3",
+        "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "graphql": "^15.3.0",
         "graphql-request": "^3.0.0",

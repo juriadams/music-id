@@ -1,5 +1,4 @@
 import * as tmi from "tmi.js";
-import { environment } from "../environment";
 import { Channels } from "./channels";
 import { Logger } from "./logger";
 import { MessageHandler } from "./message-handler";
@@ -34,8 +33,8 @@ export class TwitchClient {
                     secure: true,
                 },
                 identity: {
-                    username: environment.twitch.username,
-                    password: environment.twitch.auth,
+                    username: process.env.TWITCH_USERNAME,
+                    password: process.env.TWITCH_PASSWORD,
                 },
             });
 

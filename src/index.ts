@@ -1,10 +1,11 @@
-import { environment } from "./environment";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 /**
  * Create Sentry daemon used to automatically track errors and crashes
  */
 import * as sentry from "@sentry/node";
-sentry.init({ dsn: environment.sentry.dsn });
+sentry.init({ dsn: process.env.SENTRY_DSN });
 
 /**
  * Import classes
@@ -40,4 +41,4 @@ express()
         logger.signale.info(`Received status check from ${req.ip}`);
         res.send("I'm alive!");
     })
-    .listen(3001);
+    .listen(process.env.PORT || 3000);

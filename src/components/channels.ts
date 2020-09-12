@@ -1,9 +1,7 @@
 import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
 import { gql, GraphQLClient } from "graphql-request";
-import { Signale } from "signale";
 import moment from "moment";
-import { environment } from "../environment";
 import { Logger } from "./logger";
 
 export class Channels {
@@ -30,8 +28,8 @@ export class Channels {
     private gql: GraphQLClient;
 
     constructor(private logger: Logger) {
-        // Initialize new GraphQL Client
-        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+        // @ts-expect-error Initialize new GraphQL Client
+        this.gql = new GraphQLClient(process.env.GQL_URL).setHeader("Authorization", `Bearer ${process.env.GQL_TOKEN}`);
     }
 
     /**

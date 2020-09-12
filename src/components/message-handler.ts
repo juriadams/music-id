@@ -1,7 +1,5 @@
 import { gql, GraphQLClient } from "graphql-request";
-import { Signale } from "signale";
 import * as tmi from "tmi.js";
-import { environment } from "../environment";
 import { Channels } from "./channels";
 import { MessageComposer } from "./composer";
 import { Identifier } from "./identifier";
@@ -19,8 +17,8 @@ export class MessageHandler {
         private composer: MessageComposer,
         private identifier: Identifier,
     ) {
-        // Initialize new GraphQL Client
-        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+        // @ts-expect-error Initialize new GraphQL Client
+        this.gql = new GraphQLClient(process.env.GQL_URL).setHeader("Authorization", `Bearer ${process.env.GQL_TOKEN}`);
     }
 
     /**
@@ -43,8 +41,8 @@ export class MessageHandler {
         channelName = channelName.replace("#", "");
         message = message.toLowerCase();
 
-        // Handle Mentions
-        if (environment.mentionTriggers.some((trigger) => message.includes(trigger))) {
+        // @ts-expect-error Handle Mentions
+        if (message.includes(process.env.MENTION_TRIGGER)) {
             this.handleMention(channelName, message, sender);
         }
 

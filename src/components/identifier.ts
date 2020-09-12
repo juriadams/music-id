@@ -1,5 +1,4 @@
 import { Song } from "../interfaces/song.interface";
-import { environment } from "../environment";
 import { GraphQLClient, gql } from "graphql-request";
 import { Logger } from "./logger";
 
@@ -7,8 +6,8 @@ export class Identifier {
     private gql: GraphQLClient;
 
     constructor(private logger: Logger) {
-        // Initialize new GraphQL Client
-        this.gql = new GraphQLClient(environment.gql.url).setHeader("Authorization", `Bearer ${environment.gql.token}`);
+        // @ts-expect-error Initialize new GraphQL Client
+        this.gql = new GraphQLClient(process.env.GQL_URL).setHeader("Authorization", `Bearer ${process.env.GQL_TOKEN}`);
     }
 
     /**
@@ -37,7 +36,9 @@ export class Identifier {
             // Perform Query
             const response = await this.gql.request(query);
 
-            this.logger.signale.info(`Found ${response.nowPlaying.length} Songs playing in Channel ${channelName}`);
+            this.logger.signale.info(
+                `Found ${response.nowPlaying ? response.nowPlaying.length : 0} Songs playing in Channel ${channelName}`,
+            );
 
             // Return found Songs
             return response.nowPlaying || [];
