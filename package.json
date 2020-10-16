@@ -14,7 +14,7 @@
         "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "graphql": "^15.3.0",
-        "graphql-request": "^3.1.0",
+        "graphql-request": "^3.2.0",
         "moment": "^2.29.1",
         "signale": "^1.4.0",
         "tmi.js": "^1.5.0",
