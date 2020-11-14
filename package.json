@@ -10,7 +10,7 @@
     "author": "Juri Adams <juri@4da.ms>",
     "license": "MIT",
     "dependencies": {
-        "@sentry/node": "^5.27.3",
+        "@sentry/node": "^5.27.4",
         "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "graphql": "^15.4.0",
