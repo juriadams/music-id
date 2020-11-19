@@ -44,6 +44,8 @@ export class Channels {
                     cooldown
                     channelName
                     active
+                    useAction
+                    enableLinks
                     messageTemplates {
                         type
                         template

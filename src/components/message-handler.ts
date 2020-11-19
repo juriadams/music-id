@@ -143,7 +143,11 @@ export class MessageHandler {
                 );
 
                 this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
-                client.say(channelName, message);
+
+                // Send message the normal way or as action, depending on Channel preferences
+                this.channels.channels[channelName].useAction
+                    ? client.action(channelName, message)
+                    : client.say(channelName, message);
             }
         } else {
             // Add Channel to currently pending Channels
@@ -160,15 +164,25 @@ export class MessageHandler {
 
             // Send response in Twitch chat
             if (songs.length > 0) {
+                // Compose Succes message
                 const message = this.composer.success(channelName, requester, songs[0]);
 
                 this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
-                client.say(channelName, message);
+
+                // Send message the normal way or as action, depending on Channel preferences
+                this.channels.channels[channelName].useAction
+                    ? client.action(channelName, message)
+                    : client.say(channelName, message);
             } else {
+                // Compose Error message
                 const message = this.composer.error(channelName, requester, "No Songs found");
 
                 this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
-                client.say(channelName, message);
+
+                // Send message the normal way or as action, depending on Channel preferences
+                this.channels.channels[channelName].useAction
+                    ? client.action(channelName, message)
+                    : client.say(channelName, message);
             }
         }
     }
