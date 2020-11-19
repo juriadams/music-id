@@ -64,10 +64,10 @@ export class Channels {
             // Map Channels down to their names
             return response.channels.map((channel: Channel) => {
                 // Store Channel in memory
-                this.channels[channel.channelName] = channel;
+                this.channels[channel.channelName.toLowerCase()] = channel;
 
                 // Return channelName
-                return channel.channelName;
+                return channel.channelName.toLowerCase();
             });
         } catch (error) {
             this.logger.pino.fatal({ error }, "An Error occurred getting the all Channels, this is fatal");
