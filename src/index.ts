@@ -1,5 +1,5 @@
-import path from "path";
 import * as dotenv from "dotenv";
+import path from "path";
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 /**
@@ -11,12 +11,12 @@ sentry.init({ dsn: process.env.SENTRY_DSN });
 /**
  * Import classes
  */
-import { TwitchClient } from "./components/twitch";
 import { Channels } from "./components/channels";
-import { MessageHandler } from "./components/message-handler";
 import { MessageComposer } from "./components/composer";
 import { Identifier } from "./components/identifier";
 import { Logger } from "./components/logger";
+import { MessageHandler } from "./components/message-handler";
+import { TwitchClient } from "./components/twitch";
 
 /**
  * Create instances and distribute them
