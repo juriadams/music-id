@@ -48,7 +48,10 @@ export class MessageHandler {
 
         // FIXME: Handle not found Channels, needs investigation
         if (!this.channels.channels[channelName]) {
-            return this.logger.pino.fatal({ channel: channelName }, `Triggers missing for Channel ${channelName}`);
+            return this.logger.pino.fatal(
+                { channel: channelName, channels: this.channels.channels },
+                `Triggers missing for Channel ${channelName}`,
+            );
         }
 
         // Handle Identification requests
