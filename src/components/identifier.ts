@@ -36,15 +36,18 @@ export class Identifier {
             // Perform Query
             const response = await this.gql.request(query);
 
-            this.logger.signale.info(
-                `Found ${response.nowPlaying ? response.nowPlaying.length : 0} Songs playing in Channel ${channelName}`,
+            this.logger.pino.info(
+                { channel: channelName },
+                `Found ${response.nowPlaying?.length || 0} Songs playing in Channel ${channelName}`,
             );
 
             // Return found Songs
             return response.nowPlaying || [];
         } catch (error) {
-            this.logger.signale.error(`Error getting Songs for Channel ${channelName}`);
-            this.logger.signale.error(error);
+            this.logger.pino.error(
+                { error, channel: channelName },
+                `An Error occurred getting Songs for Channel ${channelName}`,
+            );
 
             // Do not throw an Exception, instead, return an empty Array for no found Songs
             // throw new Error(`Error gettings Songs for Channel ${channelName}`);

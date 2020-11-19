@@ -22,8 +22,7 @@ export class TwitchClient {
             // Get the names of all Channels
             const channels = await this.channels.updateChannels();
 
-            this.logger.signale.success("Received the names of all Channels");
-            this.logger.signale.info(channels);
+            this.logger.pino.info({ channels }, "Received the names of all Channels");
 
             // Create new Twitch Client and join all Channels
             this.client = tmi.Client({
@@ -43,7 +42,7 @@ export class TwitchClient {
 
             // Handle `connected` Event
             this.client.on("connected", () => {
-                this.logger.signale.success("Twitch Client connected");
+                this.logger.pino.info("Twitch Client connected successfully, joining Channels");
             });
 
             // Handle `message` Event
@@ -54,15 +53,17 @@ export class TwitchClient {
             // Catch banned or no response errors
             this.client.on("notice", (channel: string, notice: string, message: string) => {
                 if (["msg_banned", "No response from Twitch."].includes(notice)) {
-                    this.logger.signale.error(`An error occured in Channel ${channel}: ${notice}, ${message}`);
+                    this.logger.pino.error(
+                        { channel },
+                        `An Error occurred in Channel ${channel}: ${notice}, ${message}`,
+                    );
                 }
             });
         } catch (error) {
-            this.logger.signale.error("An error occurred during initial setup");
-            this.logger.signale.error(error);
+            this.logger.pino.fatal({ error }, "An Error occurred during the initial setup, this is fatal");
 
             // Throw Error (will not be caught and instead handed to Sentry)
-            throw new Error("An error occurred during initial setup");
+            throw new Error("An Error occurred during the initial setup");
         }
     }
 }

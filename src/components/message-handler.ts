@@ -48,7 +48,7 @@ export class MessageHandler {
 
         // FIXME: Handle not found Channels, needs investigation
         if (!this.channels.channels[channelName]) {
-            return this.logger.signale.fatal(`Could not find Triggers for Channel ${channelName}`);
+            return this.logger.pino.fatal({ channel: channelName }, `Triggers missing for Channel ${channelName}`);
         }
 
         // Handle Identification requests
@@ -95,7 +95,7 @@ export class MessageHandler {
             }
         `;
 
-        this.logger.signale.info(`Adding new Mention by ${sender} to database`);
+        this.logger.pino.info({ channel: channelName }, `Mention Trigger hit by ${sender} in Channel ${channelName}`);
 
         // Perform Query to insert Mention
         await this.gql.request(mutation);
@@ -115,7 +115,10 @@ export class MessageHandler {
     ): Promise<void> {
         // Check if Channel already has an Idenfiticaion pending
         if (this.channels.pendingChannels.includes(channelName)) {
-            return this.logger.signale.info(`Itendification for Channel ${channelName} already in progress`);
+            return this.logger.pino.info(
+                { channel: channelName },
+                `Song identification for Channel ${channelName} is already in progress`,
+            );
         }
 
         // Check if Channel is currently on cooldown
@@ -124,18 +127,23 @@ export class MessageHandler {
         if (cooldown.onCooldown) {
             // Check if cooldown message was already sent
             if (this.channels.cooldownMessageSent.includes(channelName)) {
-                this.logger.signale.info(`Cooldown message was already sent in Channel ${channelName}`);
+                this.logger.pino.info(
+                    { channel: channelName },
+                    `Cooldown message was already sent in Channel ${channelName}`,
+                );
             } else {
-                this.logger.signale.info(`Sending cooldown message in Channel ${channelName}`);
+                this.logger.pino.info({ channel: channelName }, `Sending cooldown message in Channel ${channelName}`);
                 this.channels.cooldownMessageSent.push(channelName);
 
-                this.logger.signale.message(
-                    this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
-                );
-                client.say(
+                const message = this.composer.cooldown(
                     channelName,
-                    this.composer.cooldown(channelName, requester, cooldown.untilNext || 0, cooldown.identification),
+                    requester,
+                    cooldown.untilNext || 0,
+                    cooldown.identification,
                 );
+
+                this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
+                client.say(channelName, message);
             }
         } else {
             // Add Channel to currently pending Channels
@@ -152,11 +160,15 @@ export class MessageHandler {
 
             // Send response in Twitch chat
             if (songs.length > 0) {
-                this.logger.signale.message(this.composer.success(channelName, requester, songs[0]));
-                client.say(channelName, this.composer.success(channelName, requester, songs[0]));
+                const message = this.composer.success(channelName, requester, songs[0]);
+
+                this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
+                client.say(channelName, message);
             } else {
-                this.logger.signale.message(this.composer.error(channelName, requester, "No Songs found"));
-                client.say(channelName, this.composer.error(channelName, requester, "No Songs found"));
+                const message = this.composer.error(channelName, requester, "No Songs found");
+
+                this.logger.pino.info({ channel: channelName, chatMessage: message }, `Sending Message: ${message}`);
+                client.say(channelName, message);
             }
         }
     }

@@ -68,8 +68,7 @@ export class Channels {
                 return channel.channelName;
             });
         } catch (error) {
-            this.logger.signale.error("Error getting Channels");
-            this.logger.signale.error(error);
+            this.logger.pino.fatal({ error }, "An Error occurred getting the all Channels, this is fatal");
 
             // Throw Error
             throw new Error("Error getting Channels");
@@ -116,8 +115,9 @@ export class Channels {
                 // Check if Channel is on cooldown
                 const onCooldown = sinceLast > 0 && sinceLast < this.channels[channelName].cooldown;
 
-                this.logger.signale.info(
-                    `${sinceLast} seconds passed since last Identification in Channel ${channelName} (${
+                this.logger.pino.info(
+                    { channel: channelName },
+                    `Received request in Channel ${channelName}, ${sinceLast} seconds passed since last Identification (${
                         onCooldown ? "on cooldown" : "not on cooldown"
                     })`,
                 );
@@ -129,7 +129,8 @@ export class Channels {
                     identification: response.channel.latestIdentification,
                 };
             } else {
-                this.logger.signale.warn(
+                this.logger.pino.warn(
+                    { channel: channelName },
                     "No `latestIdentification` found for requested Channel, returning `onCooldown = false`",
                 );
                 return {
@@ -140,8 +141,10 @@ export class Channels {
                 };
             }
         } catch (error) {
-            this.logger.signale.error(`Error getting latestIdentification for Channel ${channelName}`);
-            this.logger.signale.error(error);
+            this.logger.pino.error(
+                { error, channel: channelName },
+                `An Error occurred getting \`latestIdentification\` for Channel ${channelName}`,
+            );
 
             // Throw Error
             throw new Error(`Error getting latestIdentification for Channel ${channelName}`);

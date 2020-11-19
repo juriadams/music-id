@@ -38,7 +38,7 @@ import express from "express";
 
 express()
     .get("/", (req, res) => {
-        logger.signale.info(`Received status check from ${req.ip}`);
+        logger.pino.info({ ip: req.ip }, `Received status check from ${req.ip}`);
         res.send("I'm alive!");
     })
     .listen(process.env.PORT || 3000);
