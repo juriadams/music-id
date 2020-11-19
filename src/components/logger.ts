@@ -1,7 +1,7 @@
+import fs from "fs";
 import pino from "pino";
 import { createPinoBrowserSend, createWriteStream } from "pino-logflare";
 import * as ms from "pino-multi-stream";
-import fs from "fs";
 
 export class Logger {
     /**
