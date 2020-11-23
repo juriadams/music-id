@@ -63,6 +63,9 @@ export class Channels {
 
             // Map Channels down to their names
             return response.channels.map((channel: Channel) => {
+                // Return if channel is not set `active`
+                if (!channel.active) return;
+
                 // Store Channel in memory
                 this.channels[channel.channelName.toLowerCase()] = channel;
 
