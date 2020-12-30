@@ -18,11 +18,13 @@ export class TwitchClient {
      * Asynchronous Method called inside the constructor
      */
     private async init(): Promise<void> {
+        this.logger.pino.info("\n\nSTARTING TWITCH MUSIC ID\n\n");
+
         try {
             // Get the names of all Channels
             const channels = await this.channels.updateChannels();
 
-            this.logger.pino.info({ channels }, "Received the names of all Channels");
+            this.logger.pino.info(`Received Channels: ${channels.join(", ")}`);
 
             // Create new Twitch Client and join all Channels
             this.client = tmi.Client({
@@ -57,6 +59,13 @@ export class TwitchClient {
                         { channel },
                         `An Error occurred in Channel ${channel}: ${notice}, ${message}`,
                     );
+
+                    // Leave Channel if Bot is banned
+                    if (notice === "msg_banned") {
+                        this.logger.pino.info({ channel }, `Leaving Channel ${channel} because User is banned`);
+
+                        this.client.part(channel);
+                    }
                 }
             });
         } catch (error) {
