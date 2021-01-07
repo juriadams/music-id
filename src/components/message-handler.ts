@@ -38,7 +38,7 @@ export class MessageHandler {
      */
     public handle(channelName: string, message: string, sender: string, client: tmi.Client) {
         // Fix Channel name and make message lowercase
-        channelName = channelName.replace("#", "");
+        channelName = channelName.replace("#", "").toLowerCase();
         message = message.toLowerCase();
 
         // @ts-expect-error Handle Mentions
@@ -46,8 +46,30 @@ export class MessageHandler {
             this.handleMention(channelName, message, sender);
         }
 
-        // FIXME: Handle not found Channels, needs investigation
+        // Handle Admin Commands
+        if (
+            process.env.BOT_ADMIN?.split(",").includes(channelName) &&
+            process.env.BOT_ADMIN?.split(",").includes(sender.toLowerCase())
+        ) {
+            if (message.startsWith("!join")) {
+                const target = message.split(" ")[1];
+                if (!target) return client.action(channelName, "⚠️ Missing argument `channel`");
+
+                client.join(target);
+                client.say(channelName, `✅ Successfully joined Channel ${target}`);
+            }
+
+            if (message.startsWith("!leave") || message.startsWith("!part")) {
+                const target = message.split(" ")[1];
+                if (!target) return client.action(channelName, "⚠️ Missing argument `channel`");
+
+                client.part(target);
+                client.say(channelName, `✅ Successfully left Channel ${target}`);
+            }
+        }
+
         if (!this.channels.channels[channelName]) {
+            // Handle messages from channels with missing Configuration
             return this.logger.pino.fatal(
                 { channel: channelName, channels: this.channels.channels },
                 `Triggers missing for Channel ${channelName}`,
