@@ -40,7 +40,8 @@ export class MessageComposer {
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", song.artist)
             .replace("%TIMECODE%", song.timecode)
-            .replace("%URL%", song.url);
+            .replace("%URL%", song.url)
+            .concat(process.env.BOT_VIP?.split(",").includes(requester.toLowerCase()) ? " 🦀 🦀 🦀" : "");
     }
 
     /**

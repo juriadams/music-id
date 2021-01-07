@@ -46,7 +46,7 @@ export class MessageHandler {
             this.handleMention(channelName, message, sender);
         }
 
-        // Handle Admin Commands
+        // Messages by Admins
         if (
             process.env.BOT_ADMIN?.split(",").includes(channelName) &&
             process.env.BOT_ADMIN?.split(",").includes(sender.toLowerCase())
@@ -66,6 +66,12 @@ export class MessageHandler {
                 client.part(target);
                 client.say(channelName, `✅ Successfully left Channel ${target}`);
             }
+        }
+
+        // Handle messages by VIPs
+        if (process.env.BOT_VIP?.split(",").includes(sender.toLowerCase())) {
+            if (message.toLowerCase().startsWith("!sing"))
+                return client.say(channelName, `@${sender} FeelsWeirdMan 👉 🚪`);
         }
 
         if (!this.channels.channels[channelName]) {
