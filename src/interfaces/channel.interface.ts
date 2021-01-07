@@ -12,5 +12,5 @@ export interface Channel {
     triggers: {
         keyword: string;
     }[];
-    say: (message: string) => void;
+    say?: (message: string) => void;
 }
