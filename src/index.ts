@@ -32,13 +32,27 @@ const handler = new MessageHandler(logger, channels, composer, identifier);
 const client = new TwitchClient(logger, channels, handler);
 
 /**
- * Create a basic Express App to run monitoring checks against
+ * Create a basic Express App to handle a few HTTP Requests
  */
 import express from "express";
 
 express()
     .get("/", (req, res) => {
-        logger.pino.info({ ip: req.ip }, `Received status check from ${req.ip}`);
-        res.send("I'm alive!");
+        // Return Heartbeat
+        res.status(200).send("💓");
+    })
+    .get("/channels", (req, res) => {
+        try {
+            // Abort if Secret doesn't match
+            if (req.header("secret") !== process.env.API_SECRET)
+                return res.status(403).json({ error: "Wrong Secret." });
+
+            // Get and return list of Channels
+            const channels = client.client.getChannels();
+            res.status(200).json({ channels });
+        } catch (error) {
+            // Handle Errors
+            res.status(500).json({ error: "Error getting Channels" });
+        }
     })
     .listen(process.env.PORT || 3000);
