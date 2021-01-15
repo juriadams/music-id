@@ -98,7 +98,7 @@ export class MessageHandler {
         // GraphQL Query to get Id of the Channel
         const query = gql`
             query {
-                channel(channelName: "${channelName}") {
+                channel(name: "${channelName}") {
                     id
                 }
             }

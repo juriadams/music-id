@@ -90,7 +90,7 @@ export class Channels {
         // Specific Channel GraphQL Query
         const query = gql`
             query {
-                channel(channelName: "${channelName}") {
+                channel(name: "${channelName}") {
                     latestIdentification {
                         timestamp
                         songs {
