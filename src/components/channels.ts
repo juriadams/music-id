@@ -126,7 +126,7 @@ export default class Channels {
      */
     public async isOnCooldown(
         channel: string,
-    ): Promise<{ onCooldown: boolean; sinceLast?: number; untilNext?: number; identification?: Identification }> {
+    ): Promise<{ onCooldown: boolean; since?: number; remaining?: number; identification?: Identification }> {
         signale.scope(channel).info(`Checking Cooldown`);
 
         try {
@@ -143,27 +143,24 @@ export default class Channels {
                 signale.warn(`No Identification found for Channel \`${channel}\``);
                 return {
                     onCooldown: false,
-                    sinceLast: undefined,
-                    untilNext: undefined,
+                    since: undefined,
+                    remaining: undefined,
                     identification: undefined,
                 };
             }
 
-            // Calculate seconds passed since last Identification
-            const sinceLast = moment.utc().diff(moment.utc(Number(identification.timestamp)), "seconds");
-
             // Calculate seconds left until next possible Identification
-            const untilNext = this.store[channel].cooldown - sinceLast;
+            const remaining = this.store[channel].cooldown - identification.since;
 
             // Check if Channel is on cooldown
-            const onCooldown = sinceLast > 0 && sinceLast < this.store[channel].cooldown;
+            const onCooldown = identification.since > 0 && identification.since < this.store[channel].cooldown;
 
-            signale.scope(channel).info(`${sinceLast} seconds passed since last Identification`);
+            signale.scope(channel).info(`${identification.since} seconds passed since last attempted Identification`);
 
             return {
                 onCooldown,
-                sinceLast,
-                untilNext,
+                since: identification.since,
+                remaining,
                 identification,
             };
         } catch (error) {

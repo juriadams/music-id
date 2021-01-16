@@ -9,4 +9,5 @@ export interface Identification {
     songs: Song[];
     success: boolean;
     timestamp: string;
+    since?: number;
 }

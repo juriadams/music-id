@@ -71,6 +71,7 @@ export const LATEST_IDENTIFICATION = gql`
         channel(name: $name) {
             latestIdentification {
                 timestamp
+                since
                 songs {
                     title
                     artist
