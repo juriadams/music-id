@@ -55,7 +55,7 @@ export default class MessageComposer {
                   .replace("%REQUESTER%", requester)
                   .replace("%TITLE%", identification.songs[0].title)
                   .replace("%ARTIST%", identification.songs[0].artist)
-                  .replace("%TIME%", moment(Number(identification.timestamp)).fromNow())
+                  .replace("%TIME%", moment(Number(identification.timestamp)).utcOffset("+01:00").fromNow())
                   .concat(links && identification.songs[0].url ? ` → ${identification.songs[0].url}` : "")
             : this.getTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
