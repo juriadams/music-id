@@ -8,7 +8,7 @@ import fetch from "cross-fetch";
 export default class GraphQL {
     public client: ApolloClient<any>;
 
-    private cache: InMemoryCache = new InMemoryCache();
+    private cache: InMemoryCache = new InMemoryCache({ resultCaching: false });
     private link: ApolloLink = split(
         ({ query }) => {
             const def = getMainDefinition(query);
