@@ -26,6 +26,6 @@ const channels = new Channels(graphql);
 const identifier = new Identifier(graphql);
 const composer = new MessageComposer(channels);
 const handler = new MessageHandler(graphql, channels, composer, identifier);
-const client = new TwitchClient(graphql, channels, handler);
+const client = new TwitchClient(channels, handler);
 
 new Server(client);

@@ -3,8 +3,6 @@ import MessageHandler from "./handler";
 
 import signale from "signale";
 import tmi from "tmi.js";
-import GraphQL from "./graphql";
-import { CHANNEL_ADDED, CHANNEL_UPDATED } from "../queries/queries";
 
 export default class TwitchClient {
     /**
@@ -13,7 +11,7 @@ export default class TwitchClient {
     // @ts-expect-error Client will be initialized after Channels were retrieved
     public client: tmi.Client;
 
-    constructor(private graphql: GraphQL, private channels: Channels, private handler: MessageHandler) {
+    constructor(private channels: Channels, private handler: MessageHandler) {
         this.init();
     }
 
