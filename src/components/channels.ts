@@ -1,10 +1,10 @@
-import { Identification } from "../interfaces/identification.interface";
 import { Channel } from "../interfaces/channel.interface";
+import { Identification } from "../interfaces/identification.interface";
 
 import { gql, GraphQLClient } from "graphql-request";
 
-import signale from "signale";
 import moment from "moment";
+import signale from "signale";
 
 export class Channels {
     /**

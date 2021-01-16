@@ -1,7 +1,7 @@
 import { gql, GraphQLClient } from "graphql-request";
 
-import { MessageHandler } from "./handler";
 import { Channels } from "./channels";
+import { MessageHandler } from "./handler";
 
 import signale from "signale";
 import tmi from "tmi.js";

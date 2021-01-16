@@ -1,8 +1,8 @@
 import { gql, GraphQLClient } from "graphql-request";
 
+import { Channels } from "./channels";
 import { MessageComposer } from "./composer";
 import { Identifier } from "./identifier";
-import { Channels } from "./channels";
 
 import signale from "signale";
 import tmi from "tmi.js";
