@@ -1,27 +1,19 @@
-import { gql, GraphQLClient } from "graphql-request";
-
-import { Channels } from "./channels";
-import { MessageHandler } from "./handler";
+import Channels from "./channels";
+import MessageHandler from "./handler";
 
 import signale from "signale";
 import tmi from "tmi.js";
+import GraphQL from "./graphql";
+import { CHANNEL_ADDED, CHANNEL_UPDATED } from "../queries/queries";
 
-export class TwitchClient {
+export default class TwitchClient {
     /**
      * Twitch client instance
      */
     // @ts-expect-error Client will be initialized after Channels were retrieved
     public client: tmi.Client;
 
-    /**
-     * GraphQL Client Instance
-     */
-    private gql: GraphQLClient = new GraphQLClient(process.env.GQL_URL as string).setHeader(
-        "Authorization",
-        `Bearer ${process.env.GQL_TOKEN}`,
-    );
-
-    constructor(private channels: Channels, private handler: MessageHandler) {
+    constructor(private graphql: GraphQL, private channels: Channels, private handler: MessageHandler) {
         this.init();
     }
 
@@ -29,18 +21,18 @@ export class TwitchClient {
      * Asynchronous Method called inside the Constructor
      */
     private async init(): Promise<void> {
-        signale.info(`\n\n   STARTING MUSIC ID FOR TWITCH\n\n`);
+        signale.info(`Starting Music ID for Twitch`);
 
         try {
             // Get the names of all Channels
             const channels = await this.channels.update();
 
-            signale.info("Received Channles");
+            signale.info(`Received Channels (${channels.length} total)`);
             signale.debug(channels.join(", "));
 
             // Create new Twitch Client and join all Channels
             this.client = tmi.Client({
-                channels,
+                channels: process.env.NODE_ENV === "development" ? ["mr4dams"] : channels,
                 connection: {
                     reconnect: true,
                     secure: true,
@@ -73,34 +65,17 @@ export class TwitchClient {
                         // Leave Channel if Bot is banned
                         if (notice === "msg_banned") {
                             signale.scope(channel).error(`Banned from Chat`);
-                            this.client.part(channel);
 
-                            await this.gql
-                                .request(
-                                    gql`
-                                        mutation Channel($name: String!, $active: Boolean!) {
-                                            updateChannel(channel: { name: $name, active: $active }) {
-                                                id
-                                                channelName
-                                                active
-                                            }
-                                        }
-                                    `,
-                                    { name: channel, active: false },
-                                )
-                                .then((data) => data.updateChannel)
-                                .then((channel) =>
-                                    signale
-                                        .scope(channel)
-                                        .success(`Marked Channel \`${channel.channelName}\` as \`inactive\``),
-                                )
-                                .catch((error) => {
-                                    signale.scope(channel).error(`Error marking Channel as \`inactive\``);
-                                    signale.scope(channel).error(error);
-                                });
+                            // Leave and deactivate Channel
+                            this.client.part(channel);
+                            this.channels.deactivate(channel);
                         }
                     }
                 });
+
+            // Hand Client over to Channels Class and start listening for updates and additions
+            this.channels.client = this.client;
+            this.channels.listen();
         } catch (error) {
             signale.fatal(`Error during intial Setup`);
             signale.fatal(error);

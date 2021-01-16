@@ -1,13 +1,13 @@
-import { MESSAGE_TEMPLATE_TYPE } from "../types/template.type";
+import { MESSAGE_TEMPLATE } from "../types/template.type";
 
 import { Identification } from "../interfaces/identification.interface";
 import { Song } from "../interfaces/song.interface";
 
-import { Channels } from "./channels";
+import Channels from "./channels";
 
 import moment from "moment";
 
-export class MessageComposer {
+export default class MessageComposer {
     constructor(private channels: Channels) {}
 
     /**
@@ -15,7 +15,7 @@ export class MessageComposer {
      * @param channel Name of the Channel to get Template for
      * @param type Type of the Template to get
      */
-    private getTemplate(channel: string, type: MESSAGE_TEMPLATE_TYPE): string {
+    private getTemplate(channel: string, type: MESSAGE_TEMPLATE): string {
         return (
             this.channels.store[channel]?.messageTemplates?.find((template) => template.type === type)?.template || ""
         );

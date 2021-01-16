@@ -1,8 +1,8 @@
 import express from "express";
 
-import { TwitchClient } from "./twitch";
+import TwitchClient from "./twitch";
 
-export class Server {
+export default class Server {
     /**
      * Basic Express Server
      */

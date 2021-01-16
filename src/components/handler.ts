@@ -1,22 +1,20 @@
-import { gql, GraphQLClient } from "graphql-request";
-
-import { Channels } from "./channels";
-import { MessageComposer } from "./composer";
-import { Identifier } from "./identifier";
+import Channels from "./channels";
+import MessageComposer from "./composer";
+import Identifier from "./identifier";
 
 import signale from "signale";
 import tmi from "tmi.js";
 
-export class MessageHandler {
-    /**
-     * GraphQL Client Instance
-     */
-    private gql: GraphQLClient = new GraphQLClient(process.env.GQL_URL as string).setHeader(
-        "Authorization",
-        `Bearer ${process.env.GQL_TOKEN}`,
-    );
+import GraphQL from "./graphql";
+import { MENTION } from "../queries/queries";
 
-    constructor(private channels: Channels, private composer: MessageComposer, private identifier: Identifier) {}
+export default class MessageHandler {
+    constructor(
+        private graphql: GraphQL,
+        private channels: Channels,
+        private composer: MessageComposer,
+        private identifier: Identifier,
+    ) {}
 
     /**
      * Main Message Handler which processes every Chat Message
@@ -63,21 +61,19 @@ export class MessageHandler {
         signale.scope(channel).info(`Bot was mentioned → \`${sender}: ${message}\``);
 
         // Create new Mention Entity in Database
-        await this.gql.request(
-            gql`
-                mutation Mention($channel: String!, $message: String!, $sender: String!, $timestamp: Date!) {
-                    addMention(
-                        mention: { channel: $channel, message: $message, sender: $sender, timestamp: $timestamp }
-                    )
-                }
-            `,
-            {
-                channel,
-                message,
-                sender,
-                timestamp: new Date(),
-            },
-        );
+        await this.graphql.client
+            .mutate({
+                mutation: MENTION,
+                variables: {
+                    channel,
+                    message,
+                    sender,
+                },
+            })
+            .catch((error) => {
+                signale.scope(channel).error(`Error saving Mention`);
+                signale.scope(channel).error(error);
+            });
     }
 
     /**
