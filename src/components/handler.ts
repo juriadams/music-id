@@ -108,7 +108,7 @@ export default class MessageHandler {
             const message = this.composer.COOLDOWN(
                 channel,
                 requester,
-                cooldown.untilNext || 0,
+                cooldown.remaining || 0,
                 this.channels.store[channel].enableLinks,
                 cooldown.identification,
             );
