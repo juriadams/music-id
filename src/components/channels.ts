@@ -150,9 +150,7 @@ export default class Channels {
             }
 
             // Calculate seconds passed since last Identification
-            const sinceLast = moment()
-                .utcOffset("+01:00")
-                .diff(moment(Number(identification.timestamp)).utcOffset("+01:00"), "seconds");
+            const sinceLast = moment.utc().diff(moment.utc(Number(identification.timestamp)), "seconds");
 
             // Calculate seconds left until next possible Identification
             const untilNext = this.store[channel].cooldown - sinceLast;
