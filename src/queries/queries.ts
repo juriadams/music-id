@@ -15,6 +15,8 @@ export const CHANNEL_ADDED = gql`
             }
             triggers {
                 keyword
+                enabled
+                deleted
             }
         }
     }
@@ -35,6 +37,8 @@ export const CHANNEL_UPDATED = gql`
             }
             triggers {
                 keyword
+                enabled
+                deleted
             }
         }
     }
@@ -55,6 +59,8 @@ export const CHANNELS = gql`
             }
             triggers {
                 keyword
+                enabled
+                deleted
             }
         }
     }
@@ -69,6 +75,7 @@ export const LATEST_IDENTIFICATION = gql`
                     title
                     artist
                     timecode
+                    url
                 }
             }
         }

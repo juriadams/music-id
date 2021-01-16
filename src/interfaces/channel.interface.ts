@@ -11,6 +11,8 @@ export interface RawChannel {
     }[];
     triggers: {
         keyword: string;
+        enabled: boolean;
+        deleted: boolean;
     }[];
 }
 
@@ -27,6 +29,8 @@ export interface Channel {
     }[];
     triggers: {
         keyword: string;
+        enabled: boolean;
+        deleted: boolean;
     }[];
 
     // These Properties are not included in the "raw" Channel but added during runtime
