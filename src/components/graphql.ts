@@ -34,6 +34,14 @@ export default class GraphQL {
         this.client = new ApolloClient({
             cache: this.cache,
             link: this.link,
+            defaultOptions: {
+                watchQuery: {
+                    fetchPolicy: "no-cache",
+                },
+                query: {
+                    fetchPolicy: "no-cache",
+                },
+            },
         });
     }
 }
