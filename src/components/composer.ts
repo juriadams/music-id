@@ -27,14 +27,13 @@ export default class MessageComposer {
      * @param requester User who requested the Identification
      * @param song Identified Song object
      */
-    public SUCCESS(channel: string, requester: string, song: Song): string {
+    public SUCCESS(channel: string, requester: string, links: boolean, song: Song): string {
         return this.getTemplate(channel, "SUCCESS")
             .replace("%REQUESTER%", requester)
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", song.artist)
             .replace("%TIMECODE%", song.timecode)
-            .replace("%URL%", song.url)
-            .concat(process.env.BOT_VIP?.split(",").includes(requester.toLowerCase()) ? " 🦀 🦀 🦀" : "");
+            .concat(links && song.url ? ` → ${song.url}` : "");
     }
 
     /**
@@ -44,14 +43,20 @@ export default class MessageComposer {
      * @param remaining Seconds remaining until next possible Identification
      * @param identification Latest Identification (optional)
      */
-    public COOLDOWN(channel: string, requester: string, remaining: number, identification?: Identification): string {
+    public COOLDOWN(
+        channel: string,
+        requester: string,
+        remaining: number,
+        links: boolean,
+        identification?: Identification,
+    ): string {
         return identification?.songs[0]
             ? this.getTemplate(channel, "COOLDOWN_WITH_ID")
                   .replace("%REQUESTER%", requester)
                   .replace("%TITLE%", identification.songs[0].title)
                   .replace("%ARTIST%", identification.songs[0].artist)
                   .replace("%TIME%", moment(Number(identification.timestamp)).fromNow())
-                  .replace("%URL%", identification.songs[0].url)
+                  .concat(links && identification.songs[0].url ? ` → ${identification.songs[0].url}` : "")
             : this.getTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
                   .replace("%REMAINING%", remaining.toString());

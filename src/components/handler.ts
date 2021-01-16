@@ -46,7 +46,11 @@ export default class MessageHandler {
         }
 
         // Handle Identifications
-        if (this.channels.store[channel].triggers.some((trigger) => message.includes(trigger.keyword))) {
+        if (
+            this.channels.store[channel].triggers.some(
+                (trigger) => trigger.enabled && message.includes(trigger.keyword),
+            )
+        ) {
             this.identify(channel, sender, message, client);
         }
     }
@@ -105,6 +109,7 @@ export default class MessageHandler {
                 channel,
                 requester,
                 cooldown.untilNext || 0,
+                this.channels.store[channel].enableLinks,
                 cooldown.identification,
             );
 
@@ -130,7 +135,7 @@ export default class MessageHandler {
                 // Send Message with found Songs in Chat
                 const response: string =
                     songs?.length > 0
-                        ? this.composer.SUCCESS(channel, requester, songs[0])
+                        ? this.composer.SUCCESS(channel, requester, this.channels.store[channel].enableLinks, songs[0])
                         : this.composer.ERROR(channel, requester, "No Songs found");
                 this.channels.store[channel].useAction
                     ? client.action(channel, response)
