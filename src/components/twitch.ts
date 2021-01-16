@@ -1,30 +1,42 @@
-import * as tmi from "tmi.js";
+import { gql, GraphQLClient } from "graphql-request";
+
+import { MessageHandler } from "./handler";
 import { Channels } from "./channels";
-import { Logger } from "./logger";
-import { MessageHandler } from "./message-handler";
+
+import signale from "signale";
+import tmi from "tmi.js";
 
 export class TwitchClient {
     /**
      * Twitch client instance
      */
-    // @ts-ignore Client will be initialized asynchronous after the Channels are loaded
+    // @ts-expect-error Client will be initialized after Channels were retrieved
     public client: tmi.Client;
 
-    constructor(private logger: Logger, private channels: Channels, private handler: MessageHandler) {
+    /**
+     * GraphQL Client Instance
+     */
+    private gql: GraphQLClient = new GraphQLClient(process.env.GQL_URL as string).setHeader(
+        "Authorization",
+        `Bearer ${process.env.GQL_TOKEN}`,
+    );
+
+    constructor(private channels: Channels, private handler: MessageHandler) {
         this.init();
     }
 
     /**
-     * Asynchronous Method called inside the constructor
+     * Asynchronous Method called inside the Constructor
      */
     private async init(): Promise<void> {
-        this.logger.pino.info("\n\nSTARTING TWITCH MUSIC ID\n\n");
+        signale.info(`\n\n   STARTING MUSIC ID FOR TWITCH\n\n`);
 
         try {
             // Get the names of all Channels
-            const channels = await this.channels.updateChannels();
+            const channels = await this.channels.update();
 
-            this.logger.pino.info(`Received Channels: ${channels.join(", ")}`);
+            signale.info("Received Channles");
+            signale.debug(channels.join(", "));
 
             // Create new Twitch Client and join all Channels
             this.client = tmi.Client({
@@ -42,37 +54,57 @@ export class TwitchClient {
             // Connect Client
             this.client.connect();
 
-            // Handle `connected` Event
-            this.client.on("connected", () => {
-                this.logger.pino.info("Twitch Client connected successfully, joining Channels");
-            });
+            // Handle various Client-Events
+            this.client
+                .on("connected", () => {
+                    signale.success(`Successfully connected Twitch Client`);
+                })
+                .on("message", (channel: string, tags: any, message: string) => {
+                    this.handler.handle(channel, message, tags.username, this.client);
+                })
+                .on("notice", async (channel: string, notice: string, message: string) => {
+                    // Strip leading `#` from Channel name
+                    channel = channel.replace("#", "").toLowerCase();
 
-            // Handle `message` Event
-            this.client.on("message", (channel: string, tags: any, message: string) => {
-                this.handler.handle(channel, message, tags.username, this.client);
-            });
+                    // Check for relevant Notices
+                    if (["msg_banned", "No response from Twitch."].includes(notice)) {
+                        signale.warn(`An Error occurred: ${notice}, ${message}`);
 
-            // Catch banned or no response errors
-            this.client.on("notice", (channel: string, notice: string, message: string) => {
-                if (["msg_banned", "No response from Twitch."].includes(notice)) {
-                    this.logger.pino.error(
-                        { channel },
-                        `An Error occurred in Channel ${channel}: ${notice}, ${message}`,
-                    );
+                        // Leave Channel if Bot is banned
+                        if (notice === "msg_banned") {
+                            signale.scope(channel).error(`Banned from Chat`);
+                            this.client.part(channel);
 
-                    // Leave Channel if Bot is banned
-                    if (notice === "msg_banned") {
-                        this.logger.pino.info({ channel }, `Leaving Channel ${channel} because User is banned`);
-
-                        this.client.part(channel);
+                            await this.gql
+                                .request(
+                                    gql`
+                                        mutation Channel($name: String!, $active: Boolean!) {
+                                            updateChannel(channel: { name: $name, active: $active }) {
+                                                id
+                                                channelName
+                                                active
+                                            }
+                                        }
+                                    `,
+                                    { name: channel, active: false },
+                                )
+                                .then((data) => data.updateChannel)
+                                .then((channel) =>
+                                    signale
+                                        .scope(channel)
+                                        .success(`Marked Channel \`${channel.channelName}\` as \`inactive\``),
+                                )
+                                .catch((error) => {
+                                    signale.scope(channel).error(`Error marking Channel as \`inactive\``);
+                                    signale.scope(channel).error(error);
+                                });
+                        }
                     }
-                }
-            });
+                });
         } catch (error) {
-            this.logger.pino.fatal({ error }, "An Error occurred during the initial setup, this is fatal");
-
-            // Throw Error (will not be caught and instead handed to Sentry)
-            throw new Error("An Error occurred during the initial setup");
+            signale.fatal(`Error during intial Setup`);
+            signale.fatal(error);
+            throw new Error(`Error during initial Setup`);
         }
     }
 }

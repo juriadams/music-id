@@ -1,143 +1,109 @@
-import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
+import { Channel } from "../interfaces/channel.interface";
+
 import { gql, GraphQLClient } from "graphql-request";
+
+import signale from "signale";
 import moment from "moment";
-import { Logger } from "./logger";
 
 export class Channels {
     /**
-     * Object containing all currently loaded channels
+     * Channel `Store` containing Configurations for all Channels
      */
-    public channels: {
+    public store: {
         [key: string]: Channel;
     } = {};
 
     /**
-     * Array of channel names which currently have song identification requests pending
-     */
-    public pendingChannels: string[] = [];
-
-    /**
-     * Array of channels which are on cooldown and where a cooldown warning message was already sent in
-     */
-    public cooldownMessageSent: string[] = [];
-
-    /**
      * GraphQL Client Instance
      */
-    private gql: GraphQLClient;
-
-    constructor(private logger: Logger) {
-        // @ts-expect-error Initialize new GraphQL Client
-        this.gql = new GraphQLClient(process.env.GQL_URL).setHeader("Authorization", `Bearer ${process.env.GQL_TOKEN}`);
-    }
+    private gql: GraphQLClient = new GraphQLClient(process.env.GQL_URL as string).setHeader(
+        "Authorization",
+        `Bearer ${process.env.GQL_TOKEN}`,
+    );
 
     /**
-     * Get list of all available channels
+     * Get an Array of available Channels
      */
-    public async updateChannels(): Promise<string[]> {
-        // Channels GraphQL Query
-        const query = gql`
-            query {
-                channels {
-                    id
-                    cooldown
-                    channelName
-                    active
-                    useAction
-                    enableLinks
-                    messageTemplates {
-                        type
-                        template
-                    }
-                    triggers {
-                        keyword
-                    }
-                }
-            }
-        `;
-
+    public async update(): Promise<string[]> {
         try {
-            // Query Channels
-            const response = await this.gql.request(query);
+            // Request Channels
+            const channels = await this.gql
+                .request(
+                    gql`
+                        query Channels {
+                            channels {
+                                id
+                                cooldown
+                                channelName
+                                active
+                                useAction
+                                enableLinks
+                                messageTemplates {
+                                    type
+                                    template
+                                }
+                                triggers {
+                                    keyword
+                                }
+                            }
+                        }
+                    `,
+                )
+                .then((data) => data.channels);
 
-            // Map Channels down to their names
-            return response.channels.map((channel: Channel) => {
-                // Return if channel is not set `active`
+            // Add Channels to Channel Store
+            return channels.map((channel: Channel) => {
+                // Abort if Channel is not marked `active`
                 if (!channel.active) return;
 
-                // Store Channel in memory
-                this.channels[channel.channelName.toLowerCase()] = channel;
+                // Store Channel in Channel Store
+                this.store[channel.channelName.toLowerCase()] = channel;
 
-                // Return channelName
+                // Return only the Channel Name
                 return channel.channelName.toLowerCase();
             });
         } catch (error) {
-            this.logger.pino.fatal({ error }, "An Error occurred getting the all Channels, this is fatal");
-
-            // Throw Error
-            throw new Error("Error getting Channels");
+            signale.fatal(`An Error occurred getting Channels, this is fatal`);
+            signale.fatal(error);
+            throw new Error(`An Error occurred getting Channels, this is fatal`);
         }
     }
 
     /**
      * Check if a Channel is on cooldown
-     * @param channelName Name of the channel to check
+     * @param channel Name of the Channel to check
      */
     public async isOnCooldown(
-        channelName: string,
+        channel: string,
     ): Promise<{ onCooldown: boolean; sinceLast?: number; untilNext?: number; identification?: Identification }> {
-        // Specific Channel GraphQL Query
-        const query = gql`
-            query {
-                channel(name: "${channelName}") {
-                    latestIdentification {
-                        timestamp
-                        songs {
-                            title
-                            artist
-                            timecode
-                        }
-                    }
-                }
-            }
-        `;
+        signale.scope(channel).info(`Checking Cooldown`);
 
         try {
-            // Perform Query and get its response
-            const response = await this.gql.request(query);
+            // Get latest Identification for Channel
+            const identification = await this.gql
+                .request(
+                    gql`
+                        query Identification($name: String!) {
+                            channel(name: $name) {
+                                latestIdentification {
+                                    timestamp
+                                    songs {
+                                        title
+                                        artist
+                                        timecode
+                                    }
+                                }
+                            }
+                        }
+                    `,
+                    { name: channel },
+                )
+                .then((data) => data.channel.latestIdentification);
 
-            if (response.channel.latestIdentification) {
-                // Calculate seconds since last Identification
-                const sinceLast = moment().diff(
-                    moment(Number(response.channel.latestIdentification.timestamp)),
-                    "seconds",
-                );
-
-                // Calculate seconds remaining until next possible Identification
-                const untilNext = this.channels[channelName].cooldown - sinceLast;
-
-                // Check if Channel is on cooldown
-                const onCooldown = sinceLast > 0 && sinceLast < this.channels[channelName].cooldown;
-
-                this.logger.pino.info(
-                    { channel: channelName },
-                    `Received request in Channel ${channelName}, ${sinceLast} seconds passed since last Identification (${
-                        onCooldown ? "on cooldown" : "not on cooldown"
-                    })`,
-                );
-
-                return {
-                    onCooldown,
-                    sinceLast,
-                    untilNext,
-                    identification: response.channel.latestIdentification,
-                };
-            } else {
-                this.logger.pino.warn(
-                    { channel: channelName },
-                    "No `latestIdentification` found for requested Channel, returning `onCooldown = false`",
-                );
+            // Return if no Identification was found
+            if (!identification) {
+                signale.warn(`No Identification found for Channel \`${channel}\``);
                 return {
                     onCooldown: false,
                     sinceLast: undefined,
@@ -145,14 +111,28 @@ export class Channels {
                     identification: undefined,
                 };
             }
-        } catch (error) {
-            this.logger.pino.error(
-                { error, channel: channelName },
-                `An Error occurred getting \`latestIdentification\` for Channel ${channelName}`,
-            );
 
-            // Throw Error
-            throw new Error(`Error getting latestIdentification for Channel ${channelName}`);
+            // Calculate seconds passed since last Identification
+            const sinceLast = moment().diff(moment(Number(identification.timestamp)), "seconds");
+
+            // Calculate seconds left until next possible Identification
+            const untilNext = this.store[channel].cooldown - sinceLast;
+
+            // Check if Channel is on cooldown
+            const onCooldown = sinceLast > 0 && sinceLast < this.store[channel].cooldown;
+
+            signale.scope(channel).info(`${sinceLast} seconds passed since last Identification`);
+
+            return {
+                onCooldown,
+                sinceLast,
+                untilNext,
+                identification,
+            };
+        } catch (error) {
+            signale.scope(channel).error(`Error checking Cooldown`);
+            signale.scope(channel).error(error);
+            throw new Error(`Error checking Cooldown for Channel \`${channel}\``);
         }
     }
 }

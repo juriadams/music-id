@@ -1,41 +1,34 @@
-import { Channels } from "./channels";
-import { Song } from "../interfaces/song.interface";
+import { MESSAGE_TEMPLATE_TYPE } from "../types/template.type";
+
 import { Identification } from "../interfaces/identification.interface";
+import { Song } from "../interfaces/song.interface";
+
+import { Channels } from "./channels";
+
 import moment from "moment";
-import { Logger } from "./logger";
 
 export class MessageComposer {
-    constructor(private logger: Logger, private channels: Channels) {}
+    constructor(private channels: Channels) {}
 
     /**
-     * Get a specific MessageTemplate for a Channel
-     * @param channelName Name of the Channel to get the MessageTemplate for
-     * @param type Type of the MessageTemplate to get
+     * Get a specific Template for a Channel
+     * @param channel Name of the Channel to get Template for
+     * @param type Type of the Template to get
      */
-    private getMessageTemplate(
-        channelName: string,
-        type: "SUCCESS" | "COOLDOWN" | "COOLDOWN_WITH_ID" | "ERROR",
-    ): string {
-        // Get MessageTemplate for specified type
-        const template = this.channels.channels[channelName].messageTemplates.find(
-            (template) => template.type === type,
+    private getTemplate(channel: string, type: MESSAGE_TEMPLATE_TYPE): string {
+        return (
+            this.channels.store[channel]?.messageTemplates?.find((template) => template.type === type)?.template || ""
         );
-
-        // Return MessageTemplate
-        return template ? template.template : "";
     }
 
     /**
-     * Returns success message when a song was successfully identified
-     *
-     * %REQUESTER% - Person who requested the command
-     * %TITLE% - Title of the song
-     * %ARTIST% - Artist who made the song
-     * %TIMECODE% - Timecode where the sample starts
-     * %URL% - URL to the song
+     * Returns the hydrated `SUCCESS`-Template for a Channel
+     * @param channel Name of the Channel
+     * @param requester User who requested the Identification
+     * @param song Identified Song object
      */
-    public success(channel: string, requester: string, song: Song): string {
-        return this.getMessageTemplate(channel, "SUCCESS")
+    public SUCCESS(channel: string, requester: string, song: Song): string {
+        return this.getTemplate(channel, "SUCCESS")
             .replace("%REQUESTER%", requester)
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", song.artist)
@@ -45,40 +38,33 @@ export class MessageComposer {
     }
 
     /**
-     * Returns a message including the last identified song if one was found
-     *
-     * %REQUESTER% - Person who requested the command
-     * %TITLE% - Title of the song
-     * %ARTIST% - Artist who made the song
-     * %URL% - URL to the song
-     * %REMAINING% - Remaining seconds until command can be used again
+     * Returns the hydrated `COOLDOWN`-/`COOLDOWN_WITH_ID`-Template for a Channel
+     * @param channel Name of the Channel
+     * @param requester User who requested the Identification
+     * @param remaining Seconds remaining until next possible Identification
+     * @param identification Latest Identification (optional)
      */
-    public cooldown(
-        channel: string,
-        requester: string,
-        remaining: number,
-        latestIdentification?: Identification,
-    ): string {
-        return latestIdentification && latestIdentification.songs && latestIdentification.songs[0]
-            ? this.getMessageTemplate(channel, "COOLDOWN_WITH_ID")
+    public COOLDOWN(channel: string, requester: string, remaining: number, identification?: Identification): string {
+        return identification?.songs[0]
+            ? this.getTemplate(channel, "COOLDOWN_WITH_ID")
                   .replace("%REQUESTER%", requester)
-                  .replace("%TITLE%", latestIdentification.songs[0].title)
-                  .replace("%ARTIST%", latestIdentification.songs[0].artist)
-                  .replace("%TIME%", moment(Number(latestIdentification.timestamp)).fromNow())
-                  .replace("%URL%", latestIdentification.songs[0].url)
-            : this.getMessageTemplate(channel, "COOLDOWN")
+                  .replace("%TITLE%", identification.songs[0].title)
+                  .replace("%ARTIST%", identification.songs[0].artist)
+                  .replace("%TIME%", moment(Number(identification.timestamp)).fromNow())
+                  .replace("%URL%", identification.songs[0].url)
+            : this.getTemplate(channel, "COOLDOWN")
                   .replace("%REQUESTER%", requester)
                   .replace("%REMAINING%", remaining.toString());
     }
 
     /**
-     * Returns a message when no song could be identified
-     *
-     * %REQUESTER% - Person who requested the command
-     * %ERROR% - Error message why no Song could be identified
+     * Returns the hydrated `ERROR`-Template for a Channel
+     * @param channel Name of the Channel
+     * @param requester User who requested the Identification
+     * @param error Error message (optional)
      */
-    public error(channel: string, requester: string, errorMessage?: string): string {
-        return this.getMessageTemplate(channel, "ERROR")
+    public ERROR(channel: string, requester: string, errorMessage?: string): string {
+        return this.getTemplate(channel, "ERROR")
             .replace("%REQUESTER%", requester)
             .replace("%ERROR%", errorMessage || "");
     }
