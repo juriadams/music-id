@@ -2,8 +2,8 @@ import { Song } from "../interfaces/song.interface";
 
 import signale from "signale";
 
-import GraphQL from "./graphql";
 import { SONGS } from "../queries/queries";
+import GraphQL from "./graphql";
 
 export default class Identifier {
     constructor(private graphql: GraphQL) {}

@@ -10,13 +10,13 @@ if (process.env.NODE_ENV !== "development") sentry.init({ dsn: process.env.SENTR
 /**
  * Import Bot Components
  */
-import TwitchClient from "./components/twitch";
 import Channels from "./components/channels";
-import MessageHandler from "./components/handler";
 import MessageComposer from "./components/composer";
+import GraphQL from "./components/graphql";
+import MessageHandler from "./components/handler";
 import Identifier from "./components/identifier";
 import Server from "./components/server";
-import GraphQL from "./components/graphql";
+import TwitchClient from "./components/twitch";
 
 /**
  * Instanciate Bot Components

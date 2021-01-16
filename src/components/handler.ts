@@ -5,8 +5,8 @@ import Identifier from "./identifier";
 import signale from "signale";
 import tmi from "tmi.js";
 
-import GraphQL from "./graphql";
 import { MENTION } from "../queries/queries";
+import GraphQL from "./graphql";
 
 export default class MessageHandler {
     constructor(

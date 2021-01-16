@@ -5,8 +5,8 @@ import moment from "moment";
 import signale from "signale";
 import tmi from "tmi.js";
 
-import GraphQL from "./graphql";
 import { CHANNELS, CHANNEL_ADDED, CHANNEL_UPDATED, LATEST_IDENTIFICATION, UPDATE_CHANNEL } from "../queries/queries";
+import GraphQL from "./graphql";
 
 export default class Channels {
     /**

@@ -3,8 +3,8 @@ import MessageHandler from "./handler";
 
 import signale from "signale";
 import tmi from "tmi.js";
-import GraphQL from "./graphql";
 import { CHANNEL_ADDED, CHANNEL_UPDATED } from "../queries/queries";
+import GraphQL from "./graphql";
 
 export default class TwitchClient {
     /**
