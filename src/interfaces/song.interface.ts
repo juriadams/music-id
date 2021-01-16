@@ -1,6 +1,3 @@
-import { Moment } from "moment";
-
-// tslint:disable-next-line: interface-name
 export interface Song {
     title: string;
     artist: string;
