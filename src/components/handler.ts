@@ -144,6 +144,10 @@ export default class MessageHandler {
                 signale.scope(channel).error(`Error identifying Songs`);
                 signale.scope(channel).error(error);
 
+                // Unmark Channel as `pending` and `cooldownSent` so it does not get stuck
+                this.channels.store[channel].pending = false;
+                this.channels.store[channel].cooldownSent = false;
+
                 const response = this.composer.ERROR(channel, requester, "Error identifying Songs");
                 this.channels.store[channel].useAction
                     ? client.action(channel, response)
