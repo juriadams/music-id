@@ -1,7 +1,6 @@
 import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
 
-import moment from "moment";
 import signale from "signale";
 import tmi from "tmi.js";
 
@@ -127,8 +126,6 @@ export default class Channels {
     public async isOnCooldown(
         channel: string,
     ): Promise<{ onCooldown: boolean; since?: number; remaining?: number; identification?: Identification }> {
-        signale.scope(channel).info(`Checking Cooldown`);
-
         try {
             // Get latest Identification for Channel
             const identification = await this.graphql.client
@@ -140,7 +137,7 @@ export default class Channels {
 
             // Return if no Identification was found
             if (!identification) {
-                signale.warn(`No Identification found for Channel \`${channel}\``);
+                signale.warn(`    No latest Identification found for Channel \`${channel}\``);
                 return {
                     onCooldown: false,
                     since: undefined,
@@ -155,7 +152,11 @@ export default class Channels {
             // Check if Channel is on cooldown
             const onCooldown = identification.since > 0 && identification.since < this.store[channel].cooldown;
 
-            signale.scope(channel).info(`${identification.since} seconds passed since last attempted Identification`);
+            signale
+                .scope(channel)
+                .info(
+                    `    ${identification.since}s (${this.store[channel].cooldown}s cooldown) passed since last attempted Identification`,
+                );
 
             return {
                 onCooldown,
@@ -164,7 +165,7 @@ export default class Channels {
                 identification,
             };
         } catch (error) {
-            signale.scope(channel).error(`Error checking Cooldown`);
+            signale.scope(channel).error(`    Error checking cooldown`);
             signale.scope(channel).error(error);
             throw new Error(`Error checking Cooldown for Channel \`${channel}\``);
         }

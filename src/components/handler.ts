@@ -87,11 +87,11 @@ export default class MessageHandler {
      * @param client Twitch Client instance used to reply with
      */
     public async identify(channel: string, requester: string, message: string, client: tmi.Client): Promise<void> {
-        signale.scope(channel).start(`Song Identification requested`);
+        signale.scope(channel).start(`Song identification requested by \`${requester}\``);
 
         // Check if Identification is already in progress in Channel
         if (this.channels.store[channel].pending)
-            return signale.scope(channel).warn(`Identification is already in progress`);
+            return signale.scope(channel).warn(`    Identification is already in progress`);
 
         // Check if Identification is currently on Cooldown
         const cooldown = await this.channels.isOnCooldown(channel);
@@ -100,9 +100,9 @@ export default class MessageHandler {
         if (cooldown.onCooldown) {
             // Check if Cooldown Message was already sent
             if (this.channels.store[channel].cooldownSent)
-                return signale.scope(channel).warn(`Cooldown Message was already sent`);
+                return signale.scope(channel).warn(`    Cooldown message was already sent`);
 
-            signale.scope(channel).info(`Sending Cooldown Message`);
+            signale.scope(channel).info(`    Sending cooldown message`);
             this.channels.store[channel].cooldownSent = true;
 
             const message = this.composer.COOLDOWN(
@@ -125,8 +125,8 @@ export default class MessageHandler {
                 const songs = await this.identifier.nowPlaying(channel, requester, message);
 
                 songs?.length > 0
-                    ? signale.scope(channel).success(`Identified ${songs.length} Songs`)
-                    : signale.scope(channel).warn(`No Songs found`);
+                    ? signale.scope(channel).success(`    Identified ${songs.length} songs`)
+                    : signale.scope(channel).warn(`    No songs identified`);
 
                 // Unmark Channel as `pending` and `cooldownSent`
                 this.channels.store[channel].pending = false;
@@ -141,7 +141,7 @@ export default class MessageHandler {
                     ? client.action(channel, response)
                     : client.say(channel, response);
             } catch (error) {
-                signale.scope(channel).error(`Error identifying Songs`);
+                signale.scope(channel).error(`    Error identifying songs`);
                 signale.scope(channel).error(error);
 
                 // Unmark Channel as `pending` and `cooldownSent` so it does not get stuck
