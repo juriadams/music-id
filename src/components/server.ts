@@ -20,7 +20,9 @@ export default class Server {
                         return res.status(403).json({ error: "Wrong Secret" });
 
                     // Return list of Channels the Bot is part of
-                    res.status(200).json({ channels: client.client.getChannels() });
+                    res.status(200).json({
+                        channels: client.client.getChannels().map((channel) => channel.replace("#", "")),
+                    });
                 } catch (error) {
                     // Handle Errors
                     res.status(500).json({ error: "Error getting Channels" });
