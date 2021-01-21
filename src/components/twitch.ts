@@ -3,8 +3,8 @@ import MessageHandler from "./handler";
 
 import signale from "signale";
 
-import { ChatClient } from "twitch-chat-client";
 import { RefreshableAuthProvider, StaticAuthProvider } from "twitch-auth";
+import { ChatClient } from "twitch-chat-client";
 
 export default class TwitchClient {
     /**
@@ -44,7 +44,7 @@ export default class TwitchClient {
             // Create new Chat Client
             this.client = new ChatClient(auth, {
                 botLevel: process.env.TWITCH_BOT_LEVEL as "none" | "known" | "verified",
-                channels: channels,
+                channels,
             });
 
             // Set `onConnect` Property
