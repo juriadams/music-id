@@ -12,7 +12,7 @@ export default class TwitchClient {
      */
     public client: any;
 
-    constructor(private channels: Channels, private handler: MessageHandler) {
+    constructor(public channels: Channels, private handler: MessageHandler) {
         this.init();
     }
 
@@ -44,7 +44,7 @@ export default class TwitchClient {
             // Create new Chat Client
             this.client = new ChatClient(auth, {
                 botLevel: process.env.TWITCH_BOT_LEVEL as "none" | "known" | "verified",
-                channels: channels,
+                channels: process.env.NODE_ENV === "development" ? ["mr4dams"] : channels,
             });
 
             // Set `onConnect` Property

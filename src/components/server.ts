@@ -10,7 +10,7 @@ export default class Server {
      */
     public express: any;
 
-    constructor(client: TwitchClient) {
+    constructor(private client: TwitchClient) {
         this.express = express()
             .get("/", (req, res) => {
                 res.status(200).send("💓");
@@ -23,7 +23,7 @@ export default class Server {
 
                     // Return list of Channels the Bot is part of
                     res.status(200).json({
-                        channels: client.client.getChannels().map((channel: string) => channel.replace("#", "")),
+                        channels: this.client.channels.channels,
                     });
                 } catch (error) {
                     signale.error("Error getting Channels");
@@ -45,7 +45,7 @@ export default class Server {
                     const moderators = await client.client.getMods(req.query.channel);
 
                     // Return list of Moderators for Channel
-                    res.status(200).json(moderators);
+                    res.status(200).json({ moderators });
                 } catch (error) {
                     signale.error(`Error getting Moderators for \`${req.query.channel}\``);
                     signale.error(error);
