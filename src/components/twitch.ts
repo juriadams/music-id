@@ -2,14 +2,15 @@ import Channels from "./channels";
 import MessageHandler from "./handler";
 
 import signale from "signale";
-import tmi from "tmi.js";
+
+import { ChatClient } from "twitch-chat-client";
+import { RefreshableAuthProvider, StaticAuthProvider } from "twitch-auth";
 
 export default class TwitchClient {
     /**
      * Twitch client instance
      */
-    // @ts-expect-error Client will be initialized after Channels were retrieved
-    public client: tmi.Client;
+    public client: any;
 
     constructor(private channels: Channels, private handler: MessageHandler) {
         this.init();
@@ -25,51 +26,74 @@ export default class TwitchClient {
             // Get the names of all Channels
             const channels = await this.channels.update();
 
-            signale.info(`Received Channels (${channels.length} total)`);
+            signale.success(`Received Channels (${channels.length} total)`);
             signale.debug(channels.join(", "));
 
-            // Create new Twitch Client and join all Channels
-            this.client = tmi.Client({
-                channels: process.env.NODE_ENV === "development" ? ["mr4dams"] : channels,
-                connection: {
-                    reconnect: true,
-                    secure: true,
+            // Create new Refreshable Auth Provider
+            const auth = new RefreshableAuthProvider(
+                new StaticAuthProvider(
+                    process.env.TWITCH_CLIENT_ID as string,
+                    process.env.TWITCH_ACCESS_TOKEN as string,
+                ),
+                {
+                    clientSecret: process.env.TWITCH_CLIENT_SECRET as string,
+                    refreshToken: process.env.TWITCH_REFRESH_TOKEN as string,
                 },
-                identity: {
-                    username: process.env.TWITCH_USERNAME,
-                    password: process.env.TWITCH_PASSWORD,
-                },
+            );
+
+            // Create new Chat Client
+            this.client = new ChatClient(auth, {
+                botLevel: process.env.TWITCH_BOT_LEVEL as "none" | "known" | "verified",
+                channels: channels,
             });
 
-            // Connect Client
-            this.client.connect();
+            // Set `onConnect` Property
+            this.client.onConnect = () => {
+                signale.success("Connected to Twitch");
+            };
 
-            // Handle various Client-Events
-            this.client
-                .on("connected", () => {
-                    signale.success(`Successfully connected Twitch Client`);
-                })
-                .on("message", (channel: string, tags: any, message: string) => {
-                    this.handler.handle(channel, message, tags.username, this.client);
-                })
-                .on("notice", async (channel: string, notice: string, message: string) => {
-                    // Strip leading `#` from Channel name
-                    channel = channel.replace("#", "").toLowerCase();
+            // Set `onDisconnect` Property
+            this.client.onDisconnect = () => {
+                signale.error("Disconnected from Twitch");
+            };
 
-                    // Check for relevant Notices
-                    if (["msg_banned", "No response from Twitch."].includes(notice)) {
-                        signale.warn(`An Error occurred: ${notice}, ${message}`);
+            // Connect Chat Client
+            await this.client.connect();
+            signale.success("Connected to Twitch");
 
-                        // Leave Channel if Bot is banned
-                        if (notice === "msg_banned") {
-                            signale.scope(channel).error(`Banned from Chat`);
+            // Handle Messages
+            this.client.onMessage((channel: string, user: string, message: string) => {
+                this.handler.handle(channel, message, user, this.client);
+            });
 
-                            // Leave and deactivate Channel
-                            this.client.part(channel);
-                            this.channels.deactivate(channel);
-                        }
-                    }
-                });
+            // Handle Joins
+            this.client.onJoin((channel: string, user: string) => {
+                if (user === process.env.TWITCH_BOT_USER) {
+                    signale.info(`Joined \`${channel.replace("#", "")}\``);
+                    this.channels.channels.push(channel.replace("#", ""));
+                }
+            });
+
+            // Handle Parts
+            this.client.onPart((channel: string, user: string) => {
+                if (user === process.env.TWITCH_BOT_USER) {
+                    signale.info(`Left \`${channel.replace("#", "")}\``);
+                    this.channels.channels = this.channels.channels.filter((c) => c !== channel.replace("#", ""));
+                }
+            });
+
+            // Handle Bans
+            this.client.onBan((channel: string, user: string) => {
+                if (user === process.env.TWITCH_BOT_USER) {
+                    signale.warn(`Bot was banned in Channel \`${channel.replace("#", "")}\``);
+                    this.channels.deactivate(channel.replace("#", ""));
+                }
+            });
+
+            // Handle Rate Limits
+            this.client.onMessageRatelimit((channel: string) => {
+                signale.error(`Error sending message in \`${channel.replace("#", "")}\` since we are rate limited`);
+            });
 
             // Hand Client over to Channels Class and start listening for updates and additions
             this.channels.client = this.client;

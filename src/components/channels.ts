@@ -2,7 +2,6 @@ import { Channel } from "../interfaces/channel.interface";
 import { Identification } from "../interfaces/identification.interface";
 
 import signale from "signale";
-import tmi from "tmi.js";
 
 import GraphQL from "./graphql";
 import { CHANNELS, CHANNEL_ADDED, CHANNEL_UPDATED, LATEST_IDENTIFICATION, UPDATE_CHANNEL } from "../queries/queries";
@@ -16,9 +15,14 @@ export default class Channels {
     } = {};
 
     /**
+     * Array of all channels the bot is currently part of
+     */
+    public channels: string[] = [];
+
+    /**
      * Twitch Client instance set by TwitchClient-Class after Channels were initially received
      */
-    public client: tmi.Client | undefined;
+    public client: any | undefined;
 
     constructor(private graphql: GraphQL) {}
 
@@ -66,9 +70,7 @@ export default class Channels {
                     this.store[channel.channelName] = { pending, cooldownSent, ...channel };
 
                     // Join or leave Channel depending if we are currently in it and the new Channel `active` status
-                    const channels = this.client
-                        ?.getChannels()
-                        ?.map((channel) => channel.replace("#", "").toLowerCase());
+                    const channels = ["mr4dams"];
 
                     if (channels?.includes(channel.channelName) && !channel.active) {
                         signale

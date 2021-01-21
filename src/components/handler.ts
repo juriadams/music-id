@@ -3,7 +3,6 @@ import MessageComposer from "./composer";
 import Identifier from "./identifier";
 
 import signale from "signale";
-import tmi from "tmi.js";
 
 import GraphQL from "./graphql";
 import { MENTION } from "../queries/queries";
@@ -23,7 +22,7 @@ export default class MessageHandler {
      * @param sender User who sent the Message
      * @param client Twitch client instance
      */
-    public handle(channel: string, message: string, sender: string, client: tmi.Client) {
+    public handle(channel: string, message: string, sender: string, client: any) {
         // Strip leading `#` from Channel names
         channel = channel.replace("#", "").toLowerCase();
         message = message.toLowerCase();
@@ -86,7 +85,7 @@ export default class MessageHandler {
      * @param requester Name of the Person who requested the Songs
      * @param client Twitch Client instance used to reply with
      */
-    public async identify(channel: string, requester: string, message: string, client: tmi.Client): Promise<void> {
+    public async identify(channel: string, requester: string, message: string, client: any): Promise<void> {
         signale.scope(channel).start(`Song identification requested by \`${requester}\``);
 
         // Check if Identification is already in progress in Channel
