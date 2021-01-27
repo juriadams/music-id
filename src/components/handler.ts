@@ -95,7 +95,6 @@ export default class MessageHandler {
         // Check if Identification is currently on Cooldown
         const cooldown = await this.channels.isOnCooldown(channel);
 
-        // Check if Identification is currently on Cooldown
         if (cooldown.onCooldown) {
             // Check if Cooldown Message was already sent
             if (this.channels.store[channel].cooldownSent)
@@ -104,7 +103,7 @@ export default class MessageHandler {
             signale.scope(channel).info(`    Sending cooldown message`);
             this.channels.store[channel].cooldownSent = true;
 
-            const message = this.composer.COOLDOWN(
+            const response = this.composer.COOLDOWN(
                 channel,
                 requester,
                 cooldown.remaining || 0,
@@ -112,7 +111,7 @@ export default class MessageHandler {
                 cooldown.identification,
             );
 
-            this.channels.store[channel].useAction ? client.action(channel, message) : client.say(channel, message);
+            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
         }
 
         if (!cooldown.onCooldown) {
@@ -132,10 +131,11 @@ export default class MessageHandler {
                 this.channels.store[channel].cooldownSent = false;
 
                 // Send Message with found Songs in Chat
-                const response: string =
+                const response =
                     songs?.length > 0
                         ? this.composer.SUCCESS(channel, requester, this.channels.store[channel].enableLinks, songs[0])
                         : this.composer.ERROR(channel, requester, "No Songs found");
+
                 this.channels.store[channel].useAction
                     ? client.action(channel, response)
                     : client.say(channel, response);
@@ -148,6 +148,7 @@ export default class MessageHandler {
                 this.channels.store[channel].cooldownSent = false;
 
                 const response = this.composer.ERROR(channel, requester, "Error identifying Songs");
+
                 this.channels.store[channel].useAction
                     ? client.action(channel, response)
                     : client.say(channel, response);
