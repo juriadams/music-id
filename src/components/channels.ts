@@ -70,17 +70,17 @@ export default class Channels {
                     this.store[channel.channelName] = { pending, cooldownSent, ...channel };
 
                     // Join or leave Channel depending if we are currently in it and the new Channel `active` status
-                    const channels = ["mr4dams"];
-
-                    if (channels?.includes(channel.channelName) && !channel.active) {
+                    if (this.channels?.includes(channel.channelName) && !channel.active) {
                         signale
                             .scope(channel.channelName)
                             .info(`Leaving Channel because it is no longer marked \`active\``);
                         this.client?.part(channel.channelName);
                     }
 
-                    if (!channels?.includes(channel.channelName) && channel.active) {
-                        signale.scope(channel.channelName).info(`Joining Channel it was marked \`active\` again`);
+                    if (!this.channels?.includes(channel.channelName) && channel.active) {
+                        signale
+                            .scope(channel.channelName)
+                            .info(`Joining Channel because it was marked \`active\` again`);
                         this.client?.join(channel.channelName);
                     }
                 },

@@ -68,31 +68,45 @@ export default class TwitchClient {
 
             // Handle Joins
             this.client.onJoin((channel: string, user: string) => {
+                // Make Channel name lower case and strip leading `#`
+                channel = channel.toLocaleLowerCase().replace("#", "");
+
                 if (user === process.env.TWITCH_BOT_USER) {
-                    signale.info(`Joined \`${channel.replace("#", "")}\``);
-                    this.channels.channels.push(channel.replace("#", ""));
+                    signale.scope(channel).info(`Joined \`${channel}\``);
+                    this.channels.channels.push(channel);
                 }
             });
 
             // Handle Parts
             this.client.onPart((channel: string, user: string) => {
+                // Make Channel name lower case and strip leading `#`
+                channel = channel.toLocaleLowerCase().replace("#", "");
+
                 if (user === process.env.TWITCH_BOT_USER) {
-                    signale.info(`Left \`${channel.replace("#", "")}\``);
-                    this.channels.channels = this.channels.channels.filter((c) => c !== channel.replace("#", ""));
+                    signale.info(`Left \`${channel}\``);
+                    this.channels.channels = this.channels.channels.filter(
+                        (c) => c.toLowerCase().replace("#", "") !== channel,
+                    );
                 }
             });
 
             // Handle Bans
             this.client.onBan((channel: string, user: string) => {
+                // Make Channel name lower case and strip leading `#`
+                channel = channel.toLocaleLowerCase().replace("#", "");
+
                 if (user === process.env.TWITCH_BOT_USER) {
-                    signale.warn(`Bot was banned in Channel \`${channel.replace("#", "")}\``);
-                    this.channels.deactivate(channel.replace("#", ""));
+                    signale.warn(`Bot was banned in Channel \`${channel}\``);
+                    this.channels.deactivate(channel);
                 }
             });
 
             // Handle Rate Limits
             this.client.onMessageRatelimit((channel: string) => {
-                signale.error(`Error sending message in \`${channel.replace("#", "")}\` since we are rate limited`);
+                // Make Channel name lower case and strip leading `#`
+                channel = channel.toLocaleLowerCase().replace("#", "");
+
+                signale.error(`Error sending message in \`${channel}\` since we are rate limited`);
             });
 
             // Hand Client over to Channels Class and start listening for updates and additions
@@ -101,6 +115,7 @@ export default class TwitchClient {
         } catch (error) {
             signale.fatal(`Error during intial Setup`);
             signale.fatal(error);
+
             throw new Error(`Error during initial Setup`);
         }
     }

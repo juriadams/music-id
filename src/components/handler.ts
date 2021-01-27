@@ -23,18 +23,18 @@ export default class MessageHandler {
      * @param client Twitch client instance
      */
     public handle(channel: string, message: string, sender: string, client: any) {
-        // Strip leading `#` from Channel names
-        channel = channel.replace("#", "").toLowerCase();
+        // Strip leading `#` from Channel names and make bot Channel name and Message lower case
+        channel = channel.toLowerCase().replace("#", "");
         message = message.toLowerCase();
 
         // Handle Messages which contain `MENTION_TRIGGERS`
-        if (process.env.MENTION_TRIGGERS?.split(",").some((trigger) => message.toLowerCase().includes(trigger))) {
+        if (process.env.MENTION_TRIGGERS?.split(",").some((trigger) => message.includes(trigger))) {
             this.mention(channel, message, sender);
         }
 
         // Handle Messages which were sent by `BOT_VIPS`
         if (process.env.BOT_VIP?.split(",").includes(sender.toLowerCase())) {
-            if (message.toLowerCase().startsWith("!sing")) return client.say(channel, `@${sender} FeelsWeirdMan 👉 🚪`);
+            if (message.startsWith("!sing")) return client.say(channel, `@${sender} FeelsWeirdMan 👉 🚪`);
         }
 
         // Handle Messages from Channels with missing Configuration
