@@ -65,9 +65,7 @@ export default class Channels {
                     signale.scope(channel.channelName).info(channel);
 
                     // Store updated Channel
-                    const pending = this.store[channel.channelName].pending;
-                    const cooldownSent = this.store[channel.channelName].cooldownSent;
-                    this.store[channel.channelName] = { pending, cooldownSent, ...channel };
+                    this.store[channel.channelName] = { pending: false, cooldownSent: false, ...channel };
 
                     // Join or leave Channel depending if we are currently in it and the new Channel `active` status
                     if (this.channels?.includes(channel.channelName) && !channel.active) {

@@ -112,47 +112,47 @@ export default class MessageHandler {
             );
 
             this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
+
+            // Stop executing further if channel is on Cooldown
+            return;
         }
 
-        if (!cooldown.onCooldown) {
-            // Mark Channel as `pending`
-            this.channels.store[channel].pending = true;
+        // Mark Channel as `pending`
+        this.channels.store[channel].pending = true;
 
-            try {
-                // Identify currently playing Songs
-                const songs = await this.identifier.nowPlaying(channel, requester, message);
+        try {
+            // Identify currently playing Songs
+            const songs = await this.identifier.nowPlaying(channel, requester, message);
 
+            songs?.length > 0
+                ? signale.scope(channel).success(`    Identified ${songs.length} songs`)
+                : signale.scope(channel).warn(`    No songs identified`);
+
+            // Unmark Channel as `pending` and `cooldownSent`
+            this.channels.store[channel].pending = false;
+            this.channels.store[channel].cooldownSent = false;
+
+            // Send Message with found Songs in Chat
+            const response =
                 songs?.length > 0
-                    ? signale.scope(channel).success(`    Identified ${songs.length} songs`)
-                    : signale.scope(channel).warn(`    No songs identified`);
+                    ? this.composer.SUCCESS(channel, requester, this.channels.store[channel].enableLinks, songs[0])
+                    : this.composer.ERROR(channel, requester, "No Songs found");
 
-                // Unmark Channel as `pending` and `cooldownSent`
-                this.channels.store[channel].pending = false;
-                this.channels.store[channel].cooldownSent = false;
+            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
+        } catch (error) {
+            signale.scope(channel).error(`    Error identifying songs`);
+            signale.scope(channel).error(error);
 
-                // Send Message with found Songs in Chat
-                const response =
-                    songs?.length > 0
-                        ? this.composer.SUCCESS(channel, requester, this.channels.store[channel].enableLinks, songs[0])
-                        : this.composer.ERROR(channel, requester, "No Songs found");
+            // Unmark Channel as `pending` and `cooldownSent` so it does not get stuck
+            this.channels.store[channel].pending = false;
+            this.channels.store[channel].cooldownSent = false;
 
-                this.channels.store[channel].useAction
-                    ? client.action(channel, response)
-                    : client.say(channel, response);
-            } catch (error) {
-                signale.scope(channel).error(`    Error identifying songs`);
-                signale.scope(channel).error(error);
+            console.log(this.channels.store[channel].pending);
+            console.log(this.channels.store[channel].cooldownSent);
 
-                // Unmark Channel as `pending` and `cooldownSent` so it does not get stuck
-                this.channels.store[channel].pending = false;
-                this.channels.store[channel].cooldownSent = false;
+            const response = this.composer.ERROR(channel, requester, "Error identifying Songs");
 
-                const response = this.composer.ERROR(channel, requester, "Error identifying Songs");
-
-                this.channels.store[channel].useAction
-                    ? client.action(channel, response)
-                    : client.say(channel, response);
-            }
+            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
         }
     }
 }
