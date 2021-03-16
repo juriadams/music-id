@@ -1,39 +1,19 @@
-export interface RawChannel {
-    id: number;
-    cooldown: number;
-    channelName: string;
-    active: boolean;
-    useAction: boolean;
-    enableLinks: boolean;
-    messageTemplates: {
-        type: "SUCCESS" | "COOLDOWN" | "COOLDOWN_WITH_ID" | "ERROR";
-        template: string;
-    }[];
-    triggers: {
-        keyword: string;
-        enabled: boolean;
-        deleted: boolean;
-    }[];
-}
+import { Identification } from "./identification.interface";
+import { Template } from "./template.interface";
+import { Trigger } from "./trigger.interface";
 
 export interface Channel {
-    id: number;
+    id: string;
+    name: string;
+    enabled: string;
     cooldown: number;
-    channelName: string;
-    active: boolean;
-    useAction: boolean;
-    enableLinks: boolean;
-    messageTemplates: {
-        type: "SUCCESS" | "COOLDOWN" | "COOLDOWN_WITH_ID" | "ERROR";
-        template: string;
-    }[];
-    triggers: {
-        keyword: string;
-        enabled: boolean;
-        deleted: boolean;
-    }[];
+    actions: boolean;
+    links: boolean;
+    dateAdded: Date;
+    identifications: Partial<Identification>[];
+    triggers: Trigger[];
+    templates: Partial<Template>[];
 
-    // These Properties are not included in the "raw" Channel but added during runtime
     pending?: boolean;
-    cooldownSent?: boolean;
+    cooldownNotice?: boolean;
 }

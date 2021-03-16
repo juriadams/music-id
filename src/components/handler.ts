@@ -1,19 +1,14 @@
-import Channels from "./channels";
-import MessageComposer from "./composer";
-import Identifier from "./identifier";
+import * as Sentry from "@sentry/node";
 
+import { ChatClient, ChatUser } from "twitch-chat-client/lib";
 import signale from "signale";
 
-import GraphQL from "./graphql";
-import { MENTION } from "../queries/queries";
+import MessageComposer from "./composer";
+import Identifier from "./identifier";
+import Channels from "./channels";
 
 export default class MessageHandler {
-    constructor(
-        private graphql: GraphQL,
-        private channels: Channels,
-        private composer: MessageComposer,
-        private identifier: Identifier,
-    ) {}
+    constructor(private channels: Channels, private composer: MessageComposer, private identifier: Identifier) {}
 
     /**
      * Main Message Handler which processes every Chat Message
@@ -22,137 +17,177 @@ export default class MessageHandler {
      * @param sender User who sent the Message
      * @param client Twitch client instance
      */
-    public handle(channel: string, message: string, sender: string, client: any) {
-        // Strip leading `#` from Channel names and make bot Channel name and Message lower case
+    public handle(channel: string, message: string, user: ChatUser, client: ChatClient): void | Promise<void> {
         channel = channel.toLowerCase().replace("#", "");
-        message = message.toLowerCase();
 
-        // Handle Messages which contain `MENTION_TRIGGERS`
-        if (process.env.MENTION_TRIGGERS?.split(",").some((trigger) => message.includes(trigger))) {
-            this.mention(channel, message, sender);
+        const isHostChannel = ["mr4dams", "twitchmusicid", this.channels.client?.currentNick].includes(channel);
+        const command = message.toLowerCase().split(" ")[0];
+        const target = message.toLowerCase().split(" ")[1];
+
+        // Handle identifications for different Channels
+        if (isHostChannel && ["!song", "!id", "!identify"].includes(command)) {
+            if (!target) return client.action(channel, `Missing 𝗰𝗵𝗮𝗻𝗻𝗲𝗹 parameter. Command usage: ${command} 𝗰𝗵𝗮𝗻𝗻𝗲𝗹`);
+
+            return this.identify(channel, target, user, message, client);
         }
 
-        // Handle Messages which were sent by `BOT_VIPS`
-        if (process.env.BOT_VIP?.split(",").includes(sender.toLowerCase())) {
-            if (message.startsWith("!sing")) return client.say(channel, `@${sender} FeelsWeirdMan 👉 🚪`);
-        }
+        // Get Configuration for current Channel
+        const config = this.channels.configurations.get(channel);
 
-        // Handle Messages from Channels with missing Configuration
-        if (!this.channels.store[channel]) {
-            return signale
-                .scope(channel)
-                .fatal(`Received Message from Channel \`${channel}\` which has no Configuration`);
-        }
-
-        // Handle Identifications
-        if (
-            this.channels.store[channel].triggers.some(
-                (trigger) => trigger.enabled && message.includes(trigger.keyword),
-            )
-        ) {
-            this.identify(channel, sender, message, client);
-        }
-    }
-
-    /**
-     * Handle mentions of the bot or any other keywords specified in environment
-     * @param channel Channel the bot was mentioned in
-     * @param message Message including the keyword
-     * @param sender Name of the message sender
-     */
-    public async mention(channel: string, message: string, sender: string): Promise<void> {
-        signale.scope(channel).info(`Bot was mentioned → \`${sender}: ${message}\``);
-
-        // Create new Mention Entity in Database
-        await this.graphql.client
-            .mutate({
-                mutation: MENTION,
-                variables: {
-                    channel,
-                    message,
-                    sender,
-                },
-            })
-            .catch((error) => {
-                signale.scope(channel).error(`Error saving Mention`);
-                signale.scope(channel).error(error);
-            });
-    }
-
-    /**
-     * Handle Song identification Requests
-     * @param channelName Name of the Channel currently playing Songs were requested for
-     * @param requester Name of the Person who requested the Songs
-     * @param client Twitch Client instance used to reply with
-     */
-    public async identify(channel: string, requester: string, message: string, client: any): Promise<void> {
-        signale.scope(channel).start(`Song identification requested by \`${requester}\``);
-
-        // Check if Identification is already in progress in Channel
-        if (this.channels.store[channel].pending)
-            return signale.scope(channel).warn(`    Identification is already in progress`);
-
-        // Check if Identification is currently on Cooldown
-        const cooldown = await this.channels.isOnCooldown(channel);
-
-        if (cooldown.onCooldown) {
-            // Check if Cooldown Message was already sent
-            if (this.channels.store[channel].cooldownSent)
-                return signale.scope(channel).warn(`    Cooldown message was already sent`);
-
-            signale.scope(channel).info(`    Sending cooldown message`);
-            this.channels.store[channel].cooldownSent = true;
-
-            const response = this.composer.COOLDOWN(
-                channel,
-                requester,
-                cooldown.remaining || 0,
-                this.channels.store[channel].enableLinks,
-                cooldown.identification,
+        // Check if configuration exists for Channel
+        if (!config) {
+            signale.error(`Received Message from Channel \`${channel}\` which has no configuration`);
+            Sentry.captureException(
+                new Error(`Received Message from Channel \`${channel}\` which has no configuration`),
             );
-
-            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
-
-            // Stop executing further if channel is on Cooldown
             return;
         }
 
-        // Mark Channel as `pending`
-        this.channels.store[channel].pending = true;
+        // Handle Identifications
+        if (config.triggers.some((trigger) => message.toLowerCase().includes(trigger.keyword))) {
+            this.identify(channel, channel, user, message, client);
+        }
+    }
 
-        try {
-            // Identify currently playing Songs
-            const songs = await this.identifier.nowPlaying(channel, requester, message);
+    /**
+     * Identify Songs playing in a Channel
+     * @param host Channel the bot will respond in
+     * @param target Channel to identify Songs in
+     * @param user ChatUser who requested identification
+     * @param message Message used to start identification
+     * @param client ChatClient to respond with
+     * @returns A Promise resolving nothing
+     */
+    public async identify(
+        host: string,
+        target: string,
+        user: ChatUser,
+        message: string,
+        client: ChatClient,
+    ): Promise<void> {
+        signale.start(`Song identification requested for Channel \`${target}\` by \`${user.userName}\``);
 
-            songs?.length > 0
-                ? signale.scope(channel).success(`    Identified ${songs.length} songs`)
-                : signale.scope(channel).warn(`    No songs identified`);
+        // If identification was requested for the Channel the command was sent in
+        if (host === target) {
+            try {
+                signale.await(`Fetching configuration for Channel \`${target}\``);
 
-            // Unmark Channel as `pending` and `cooldownSent`
-            this.channels.store[channel].pending = false;
-            this.channels.store[channel].cooldownSent = false;
+                // Get Channel configuration
+                const config = this.channels.configurations.get(target);
+                if (!config) {
+                    signale.error(`Could not find configuration for target Channel \`${target}\``);
+                    throw new Error(`Could not find configuration for target Channel \`${target}\``);
+                }
 
-            // Send Message with found Songs in Chat
-            const response =
-                songs?.length > 0
-                    ? this.composer.SUCCESS(channel, requester, this.channels.store[channel].enableLinks, songs[0])
-                    : this.composer.ERROR(channel, requester, "No Songs found");
+                // Check if Identification is already in progress in Channel
+                if (this.channels.pending.get(config.id))
+                    return signale.warn(`Song identification is already in Progress in target Channel \`${target}\``);
 
-            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
-        } catch (error) {
-            signale.scope(channel).error(`    Error identifying songs`);
-            signale.scope(channel).error(error);
+                // Check if Identifications are currently on cooldown for this Channel
+                const cooldown = await this.channels.onCooldown(config);
+                if (cooldown.onCooldown) {
+                    // Check if the cooldown notice was already sent in Channel
+                    if (this.channels.cooldownNotice.get(config.id))
+                        return signale.warn(`Cooldown notice was already sent in target Channel \`${target}\``);
 
-            // Unmark Channel as `pending` and `cooldownSent` so it does not get stuck
-            this.channels.store[channel].pending = false;
-            this.channels.store[channel].cooldownSent = false;
+                    signale.await(`Sending cooldown notice`);
+                    this.channels.cooldownNotice.set(config.id, true);
 
-            console.log(this.channels.store[channel].pending);
-            console.log(this.channels.store[channel].cooldownSent);
+                    const response = this.composer.COOLDOWN(
+                        config,
+                        user,
+                        cooldown.remaining || 0,
+                        cooldown.identification,
+                    );
 
-            const response = this.composer.ERROR(channel, requester, "Error identifying Songs");
+                    return this.composer.send(config, user, response, client).then(() => {
+                        signale.success(`Sent cooldown notice in Channel \`${target}\``);
+                    });
+                }
 
-            this.channels.store[channel].useAction ? client.action(channel, response) : client.say(channel, response);
+                // Mark Channel as `pending`
+                this.channels.pending.set(config.id, true);
+
+                signale.await("Waiting for results");
+
+                // Identify Songs for targetChannel
+                const identification = await this.identifier.identify(target, user.userName, message);
+                const { songs } = identification;
+
+                songs.length > 0
+                    ? signale.success(`Identified ${songs.length} Songs for target Channel \`${target}\``)
+                    : signale.warn(`Could not identify any Songs for target Channel \`${target}\``);
+
+                // Reset Channel
+                this.channels.pending.set(config.id, false);
+                this.channels.cooldownNotice.set(config.id, false);
+
+                // Respond with identified Songs
+                const response =
+                    songs.length > 0
+                        ? this.composer.SUCCESS(config, user, songs[0])
+                        : this.composer.ERROR(config, user, "Could not identify any Songs");
+
+                return this.composer.send(config, user, response, client).then(() => {
+                    signale.success(`Sent response in Channel \`${host}\``);
+                });
+            } catch (error) {
+                Sentry.captureException(error);
+
+                signale.error(`Unexpected error while identifying Songs in target Channel \`${target}\``);
+                signale.error(error);
+
+                const config = this.channels.configurations.get(target);
+                if (!config) {
+                    signale.error(`Could not find configuration for target Channel \`${target}\``);
+                    throw new Error(`Could not find configuration for target Channel \`${target}\``);
+                }
+
+                // Reset Channel
+                this.channels.pending.set(config.id, false);
+                this.channels.cooldownNotice.set(config.id, false);
+
+                // Respond with error message
+                return this.composer
+                    .send(config, user, `@${user.displayName} → Unexpected error: ${error.message}`, client)
+                    .then(() => {
+                        signale.success(`Sent error message in Channel \`${host}\``);
+                    });
+            }
+        }
+
+        // If identification was requested for a different Channel
+        if (host !== target) {
+            try {
+                signale.await("Waiting for results");
+
+                // Identify Songs for targetChannel
+                const identification = await this.identifier.identify(target, user.userName, message);
+                const { songs } = identification;
+
+                songs.length > 0
+                    ? signale.success(`Identified ${songs.length} Songs for target Channel \`${target}\``)
+                    : signale.warn(`Could not identify any Songs for target Channel \`${target}\``);
+
+                return songs.length > 0
+                    ? client
+                          .action(host, `@${user.displayName} → Detected "${songs[0].title}" by ${songs[0].artists}`)
+                          .then(() => {
+                              signale.success(`Sent response in Channel \`${host}\``);
+                          })
+                    : client.action(host, `@${user.displayName} → Could not identify any Songs`).then(() => {
+                          signale.success(`Sent response in Channel \`${host}\``);
+                      });
+            } catch (error) {
+                Sentry.captureException(error);
+
+                signale.error(`Unexpected error while identifying Songs in target Channel \`${target}\``);
+                signale.error(error);
+
+                client.action(host, `@${user.displayName} → Unexpected error: ${error.message}`).then(() => {
+                    signale.success(`Sent error message in Channel \`${host}\``);
+                });
+            }
         }
     }
 }
