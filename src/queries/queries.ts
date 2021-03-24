@@ -43,6 +43,7 @@ export const UPDATE_CLIENT = gql`
         updateClient(id: $id, client: { accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt }) {
             id
             name
+            environment
             clientId
             clientSecret
             accessToken
