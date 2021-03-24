@@ -26,7 +26,7 @@ export default class GraphQL {
                 fetch,
                 uri: process.env.BOT_GQL_HTTP as string,
                 headers: {
-                    // Authorization: `Bearer ${process.env.GQL_TOKEN as string}`,
+                    Authorization: `Secret ${process.env.CLIENT_TOKEN_SECRET}`,
                 },
             }),
         ),
