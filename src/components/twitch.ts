@@ -8,7 +8,7 @@ import signale from "signale";
 import Channels from "./channels";
 import MessageHandler from "./handler";
 import GraphQL from "./graphql";
-import { CLIENT, UPDATE_CLIENT } from "../queries/queries";
+import { CLIENT, TOKEN, UPDATE_CLIENT } from "../queries/queries";
 
 import { Client } from "../interfaces/client.interface";
 
@@ -65,14 +65,10 @@ export default class TwitchClient {
                                 },
                             })
                             .then(() => {
-                                signale.success(
-                                    `Stored refreshed Token for Client \`${client.name}\` (${client.environment})`,
-                                );
+                                signale.success(`Stored refreshed Token for Client \`${client.name}\` (${client.environment})`);
                             })
                             .catch((err) => {
-                                signale.error(
-                                    `Error storing refreshed Token for Client \`${client.name}\` (${client.environment})`,
-                                );
+                                signale.error(`Error storing refreshed Token for Client \`${client.name}\` (${client.environment})`);
                                 signale.error(err);
                             });
                     },
