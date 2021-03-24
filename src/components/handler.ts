@@ -37,9 +37,7 @@ export default class MessageHandler {
         // Check if configuration exists for Channel
         if (!config) {
             signale.error(`Received Message from Channel \`${channel}\` which has no configuration`);
-            Sentry.captureException(
-                new Error(`Received Message from Channel \`${channel}\` which has no configuration`),
-            );
+            Sentry.captureException(new Error(`Received Message from Channel \`${channel}\` which has no configuration`));
             return;
         }
 
@@ -58,13 +56,7 @@ export default class MessageHandler {
      * @param client ChatClient to respond with
      * @returns A Promise resolving nothing
      */
-    public async identify(
-        host: string,
-        target: string,
-        user: ChatUser,
-        message: string,
-        client: ChatClient,
-    ): Promise<void> {
+    public async identify(host: string, target: string, user: ChatUser, message: string, client: ChatClient): Promise<void> {
         signale.start(`Song identification requested for Channel \`${target}\` by \`${user.userName}\``);
 
         // If identification was requested for the Channel the command was sent in
@@ -93,12 +85,7 @@ export default class MessageHandler {
                     signale.await(`Sending cooldown notice`);
                     this.channels.cooldownNotice.set(config.id, true);
 
-                    const response = this.composer.COOLDOWN(
-                        config,
-                        user,
-                        cooldown.remaining || 0,
-                        cooldown.identification,
-                    );
+                    const response = this.composer.COOLDOWN(config, user, cooldown.remaining || 0, cooldown.identification);
 
                     return this.composer.send(config, user, response, client).then(() => {
                         signale.success(`Sent cooldown notice in Channel \`${target}\``);
@@ -148,11 +135,9 @@ export default class MessageHandler {
                 this.channels.cooldownNotice.set(config.id, false);
 
                 // Respond with error message
-                return this.composer
-                    .send(config, user, `@${user.displayName} → Unexpected error: ${error.message}`, client)
-                    .then(() => {
-                        signale.success(`Sent error message in Channel \`${host}\``);
-                    });
+                return this.composer.send(config, user, `@${user.displayName} → Unexpected error: ${error.message}`, client).then(() => {
+                    signale.success(`Sent error message in Channel \`${host}\``);
+                });
             }
         }
 
@@ -170,11 +155,9 @@ export default class MessageHandler {
                     : signale.warn(`Could not identify any Songs for target Channel \`${target}\``);
 
                 return songs.length > 0
-                    ? client
-                          .action(host, `@${user.displayName} → Detected "${songs[0].title}" by ${songs[0].artists}`)
-                          .then(() => {
-                              signale.success(`Sent response in Channel \`${host}\``);
-                          })
+                    ? client.action(host, `@${user.displayName} → Detected "${songs[0].title}" by ${songs[0].artists}`).then(() => {
+                          signale.success(`Sent response in Channel \`${host}\``);
+                      })
                     : client.action(host, `@${user.displayName} → Could not identify any Songs`).then(() => {
                           signale.success(`Sent response in Channel \`${host}\``);
                       });
