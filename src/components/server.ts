@@ -20,7 +20,7 @@ export default class Server {
         .get("/channels", (req, res) => {
             try {
                 // Abort if Secret doesn't match
-                if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.BOT_API_SECRET)
+                if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.SHARED_API_SECRET)
                     return res.status(403).json({ error: "Wrong Secret" });
 
                 // Return list of Channels the Bot is part of
@@ -38,7 +38,7 @@ export default class Server {
         .get("/moderators", async (req, res) => {
             try {
                 // Abort if Secret doesn't match
-                if (!req.header("secret") || req.header("secret") !== process.env.BOT_API_SECRET)
+                if (!req.header("secret") || req.header("secret") !== process.env.SHARED_API_SECRET)
                     return res.status(403).json({ error: "Wrong Secret" });
 
                 // Abort if `channel` is missing

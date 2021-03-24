@@ -16,7 +16,7 @@ export default class GraphQL {
                 return def.kind === "OperationDefinition" && def.operation === "subscription";
             },
             new WebSocketLink({
-                uri: process.env.BOT_GQL_WS as string,
+                uri: process.env.BOT_API_WS as string,
                 options: {
                     reconnect: true,
                 },
@@ -24,9 +24,9 @@ export default class GraphQL {
             }),
             createHttpLink({
                 fetch,
-                uri: process.env.BOT_GQL_HTTP as string,
+                uri: process.env.BOT_API_HTTP as string,
                 headers: {
-                    Authorization: `Secret ${process.env.CLIENT_TOKEN_SECRET}`,
+                    Authorization: `Secret ${process.env.API_TOKEN_SECRET}`,
                 },
             }),
         ),
