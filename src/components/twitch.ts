@@ -8,7 +8,7 @@ import signale from "signale";
 import Channels from "./channels";
 import MessageHandler from "./handler";
 import GraphQL from "./graphql";
-import { CLIENT, TOKEN, UPDATE_CLIENT } from "../queries/queries";
+import { CLIENT, UPDATE_CLIENT } from "../queries/queries";
 
 import { Client } from "../interfaces/client.interface";
 
