@@ -26,7 +26,7 @@ export default class GraphQL {
                 fetch,
                 uri: process.env.BOT_API_HTTP as string,
                 headers: {
-                    Authorization: `Secret ${process.env.API_TOKEN_SECRET}`,
+                    Authorization: `Secret ${process.env.SHARED_API_SECRET}`,
                 },
             }),
         ),
