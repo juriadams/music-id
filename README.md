@@ -18,10 +18,10 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/4dams/twitch-music-id/issues" target="_blank">
+    <a href="https://github.com/4dams/music-id/issues" target="_blank">
         <img src="https://img.shields.io/github/issues/4dams/twitch-music-id?style=for-the-badge">
     <a>
-    <a href="https://github.com/4dams/twitch-music-id/pulls" target="_blank">
+    <a href="https://github.com/4dams/music-id/pulls" target="_blank">
         <img src="https://img.shields.io/github/issues-pr/4dams/twitch-music-id?style=for-the-badge">
     </a>
 </p>
