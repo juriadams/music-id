@@ -28,8 +28,6 @@ COPY . .
 
 COPY --from=development /app/dist ./dist
 
-RUN yarn prisma:generate
-
 # Install pm2 daemon
 RUN yarn global add pm2
 
