@@ -1,76 +1,93 @@
-import { MESSAGE_TEMPLATE } from "../types/template.type";
-
-import { Identification } from "../interfaces/identification.interface";
-import { Song } from "../interfaces/song.interface";
-
-import Channels from "./channels";
-
+import { ChatClient, ChatUser } from "twitch-chat-client/lib";
+import signale from "signale";
 import moment from "moment";
 
+import { Identification } from "../interfaces/identification.interface";
+import { Channel } from "../interfaces/channel.interface";
+import { Song } from "../interfaces/song.interface";
+
 export default class MessageComposer {
-    constructor(private channels: Channels) {}
-
-    /**
-     * Get a specific Template for a Channel
-     * @param channel Name of the Channel to get Template for
-     * @param type Type of the Template to get
-     */
-    private getTemplate(channel: string, type: MESSAGE_TEMPLATE): string {
-        return (
-            this.channels.store[channel]?.messageTemplates?.find((template) => template.type === type)?.template || ""
-        );
-    }
-
     /**
      * Returns the hydrated `SUCCESS`-Template for a Channel
      * @param channel Name of the Channel
-     * @param requester User who requested the Identification
+     * @param user ChatUser containing User details
      * @param song Identified Song object
      */
-    public SUCCESS(channel: string, requester: string, links: boolean, song: Song): string {
-        return this.getTemplate(channel, "SUCCESS")
-            .replace("%REQUESTER%", requester)
+    public SUCCESS = (channel: Channel, user: ChatUser, song: Song): string => {
+        const template = channel.templates.find((template) => template.type === "SUCCESS")?.template || null;
+
+        if (!template) {
+            signale.error(`Could not find Template of type \`SUCCESS\`  for Channel \`${channel}\``);
+            throw new Error(`Could not find Template of type \`SUCCESS\`  for Channel \`${channel}\``);
+        }
+
+        return template
+            .replace("%REQUESTER%", user.userName)
             .replace("%TITLE%", song.title)
-            .replace("%ARTIST%", song.artist)
+            .replace("%ARTIST%", song.artists as string)
             .replace("%TIMECODE%", song.timecode)
-            .concat(links && song.url ? ` → ${song.url}` : "");
-    }
+            .concat(channel.links && song.url ? ` → ${song.url}` : "");
+    };
 
     /**
      * Returns the hydrated `COOLDOWN`-/`COOLDOWN_WITH_ID`-Template for a Channel
      * @param channel Name of the Channel
-     * @param requester User who requested the Identification
+     * @param user ChatUser containing User details
      * @param remaining Seconds remaining until next possible Identification
      * @param identification Latest Identification (optional)
      */
-    public COOLDOWN(
-        channel: string,
-        requester: string,
-        remaining: number,
-        links: boolean,
-        identification?: Identification,
-    ): string {
+    public COOLDOWN = (channel: Channel, user: ChatUser, remaining: number, identification?: Identification): string => {
+        const template =
+            channel.templates.find((template) => (template.type === identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"))
+                ?.template || null;
+
+        if (!template) {
+            signale.error(
+                `Could not find Template of type \`${
+                    identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"
+                }\` for Channel \`${channel}\``,
+            );
+            throw new Error(
+                `Could not find Template of type \`${
+                    identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"
+                }\` for Channel \`${channel}\``,
+            );
+        }
+
         return identification?.songs[0]
-            ? this.getTemplate(channel, "COOLDOWN_WITH_ID")
-                  .replace("%REQUESTER%", requester)
+            ? template
+                  .replace("%REQUESTER%", user.userName)
                   .replace("%TITLE%", identification.songs[0].title)
-                  .replace("%ARTIST%", identification.songs[0].artist)
-                  .replace("%TIME%", moment.utc(Number(identification.timestamp)).fromNow())
-                  .concat(links && identification.songs[0].url ? ` → ${identification.songs[0].url}` : "")
-            : this.getTemplate(channel, "COOLDOWN")
-                  .replace("%REQUESTER%", requester)
-                  .replace("%REMAINING%", remaining.toString());
-    }
+                  .replace("%ARTIST%", identification.songs[0].artists as string)
+                  .replace("%TIME%", moment(identification.date).fromNow())
+                  .concat(channel.links && identification.songs[0].url ? ` → ${identification.songs[0].url}` : "")
+            : template.replace("%REQUESTER%", user.userName).replace("%REMAINING%", remaining.toString());
+    };
 
     /**
      * Returns the hydrated `ERROR`-Template for a Channel
      * @param channel Name of the Channel
-     * @param requester User who requested the Identification
+     * @param user ChatUser containing User details
      * @param error Error message (optional)
      */
-    public ERROR(channel: string, requester: string, errorMessage?: string): string {
-        return this.getTemplate(channel, "ERROR")
-            .replace("%REQUESTER%", requester)
-            .replace("%ERROR%", errorMessage || "");
-    }
+    public ERROR = (channel: Channel, user: ChatUser, errorMessage?: string): string => {
+        const template = channel.templates.find((template) => template.type === "ERROR")?.template || null;
+
+        if (!template) {
+            signale.error(`Could not find Template of type \`ERROR\`  for Channel \`${channel}\``);
+            throw new Error(`Could not find Template of type \`ERROR\`  for Channel \`${channel}\``);
+        }
+
+        return template.replace("%REQUESTER%", user.userName).replace("%ERROR%", errorMessage || "<unknown error>");
+    };
+
+    /**
+     * Send a Chat message in a Channel
+     * @param channel Channel configuration object
+     * @param user ChatUser object of the person to respond to
+     * @param message Chat message to respond with
+     * @param client ChatClient to use to respond
+     */
+    public send = (channel: Channel, user: ChatUser, message: string, client: ChatClient): Promise<void> =>
+        channel.actions ? client.action(channel.name, message) : client.say(channel.name, message);
 }

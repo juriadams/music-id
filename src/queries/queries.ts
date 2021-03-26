@@ -4,20 +4,6 @@ export const CHANNEL_ADDED = gql`
     subscription Channel {
         channelAdded {
             id
-            cooldown
-            channelName
-            active
-            useAction
-            enableLinks
-            messageTemplates {
-                type
-                template
-            }
-            triggers {
-                keyword
-                enabled
-                deleted
-            }
         }
     }
 `;
@@ -26,19 +12,67 @@ export const CHANNEL_UPDATED = gql`
     subscription Channel {
         channelUpdated {
             id
+        }
+    }
+`;
+
+export const CHANNEL_DELETED = gql`
+    subscription Channel {
+        channelDeleted {
+            id
+        }
+    }
+`;
+
+export const CLIENT = gql`
+    query Client($environment: String!) {
+        client(environment: $environment) {
+            id
+            name
+            clientId
+            clientSecret
+            accessToken
+            refreshToken
+            expiresAt
+        }
+    }
+`;
+
+export const UPDATE_CLIENT = gql`
+    mutation Client($id: String!, $accessToken: String!, $refreshToken: String!, $expiresAt: DateTime!) {
+        updateClient(id: $id, client: { accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt }) {
+            id
+            name
+            environment
+            clientId
+            clientSecret
+            accessToken
+            refreshToken
+            expiresAt
+        }
+    }
+`;
+
+export const CHANNEL = gql`
+    query Channel($id: String!) {
+        channel(id: $id) {
+            id
+            name
+            enabled
             cooldown
-            channelName
-            active
-            useAction
-            enableLinks
-            messageTemplates {
+            actions
+            links
+            dateAdded
+            identifications {
+                id
+            }
+            triggers(enabled: true) {
+                id
+                keyword
+            }
+            templates {
                 type
                 template
-            }
-            triggers {
-                keyword
-                enabled
-                deleted
             }
         }
     }
@@ -46,35 +80,37 @@ export const CHANNEL_UPDATED = gql`
 
 export const CHANNELS = gql`
     query Channels {
-        channels(active: true) {
+        channels(enabled: true) {
             id
+            name
+            enabled
             cooldown
-            channelName
-            active
-            useAction
-            enableLinks
-            messageTemplates {
+            actions
+            links
+            dateAdded
+            identifications {
+                id
+            }
+            triggers(enabled: true) {
+                id
+                keyword
+            }
+            templates {
                 type
                 template
-            }
-            triggers {
-                keyword
-                enabled
-                deleted
             }
         }
     }
 `;
 
 export const LATEST_IDENTIFICATION = gql`
-    query Identification($name: String!) {
-        channel(name: $name) {
-            latestIdentification {
-                timestamp
-                since
+    query Identification($id: String!) {
+        channel(id: $id) {
+            identifications(limit: 1) {
+                date
                 songs {
                     title
-                    artist
+                    artists
                     timecode
                     url
                 }
@@ -84,11 +120,11 @@ export const LATEST_IDENTIFICATION = gql`
 `;
 
 export const UPDATE_CHANNEL = gql`
-    mutation Channel($name: String!, $active: Boolean!) {
-        updateChannel(channel: { name: $name, active: $active }) {
+    mutation Channel($id: String!, $enabled: Boolean!) {
+        updateChannel(id: $id, channel: { enabled: $enabled }) {
             id
-            channelName
-            active
+            name
+            enabled
         }
     }
 `;
@@ -101,15 +137,24 @@ export const MENTION = gql`
     }
 `;
 
-export const SONGS = gql`
+export const IDENTIFY = gql`
     query Songs($channel: String!, $requester: String!, $message: String!) {
-        nowPlaying(channel: $channel, requester: $requester, message: $message) {
-            title
-            artist
-            album
-            label
-            timecode
-            url
+        identify(channel: $channel, requester: $requester, message: $message) {
+            id
+            successful
+            date
+            songs {
+                id
+                title
+                album
+                artists
+                label
+                score
+                releaseDate
+                url
+                duration
+                timecode
+            }
         }
     }
 `;

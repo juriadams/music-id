@@ -1,13 +1,14 @@
+import { Channel } from "./channel.interface";
 import { Song } from "./song.interface";
+import { Trigger } from "./trigger.interface";
 
 export interface Identification {
-    channel: string;
-    matchedTriggers: string[];
-    message: string;
+    id: string;
+    channel: Partial<Channel>;
     requester: string;
-    response: any;
+    successful: boolean;
+    date: Date;
+    message: string;
+    triggers: Partial<Trigger>[];
     songs: Song[];
-    success: boolean;
-    timestamp: string;
-    since?: number;
 }

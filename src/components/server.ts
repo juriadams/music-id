@@ -1,59 +1,64 @@
 import express from "express";
+import signale from "signale";
 
 import TwitchClient from "./twitch";
 
-import signale from "signale";
-
 export default class Server {
     /**
-     * Basic Express Server
+     * Basic Expess API responding to various requests
      */
-    public express: any;
+    public express = express()
+        .get("/", (_, res) => {
+            if (!this.client.client) {
+                return res.status(500).json({ error: "No ChatClient present" });
+            }
 
-    constructor(private client: TwitchClient) {
-        this.express = express()
-            .get("/", (req, res) => {
-                res.status(200).send("💓");
-            })
-            .get("/channels", (req, res) => {
-                try {
-                    // Abort if Secret doesn't match
-                    if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.API_SECRET)
-                        return res.status(403).json({ error: "Wrong Secret" });
+            res.status(200).json({
+                status: "💓",
+            });
+        })
+        .get("/channels", (req, res) => {
+            try {
+                // Abort if Secret doesn't match
+                if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.SHARED_API_SECRET)
+                    return res.status(403).json({ error: "Wrong Secret" });
 
-                    // Return list of Channels the Bot is part of
-                    res.status(200).json({
-                        channels: this.client.channels.channels,
-                    });
-                } catch (error) {
-                    signale.error("Error getting Channels");
-                    signale.error(error);
+                // Return list of Channels the Bot is part of
+                res.status(200).json({
+                    channels: this.client.channels.partOf,
+                });
+            } catch (error) {
+                signale.error("Error getting Channels");
+                signale.error(error);
 
-                    // Handle Errors
-                    res.status(500).json({ error: "Error getting Channels" });
-                }
-            })
-            .get("/moderators", async (req, res) => {
-                try {
-                    // Abort if Secret doesn't match
-                    if (!req.header("secret") || req.header("secret") !== process.env.API_SECRET)
-                        return res.status(403).json({ error: "Wrong Secret" });
+                // Handle Errors
+                res.status(500).json({ error: "Error getting Channels" });
+            }
+        })
+        .get("/moderators", async (req, res) => {
+            try {
+                // Abort if Secret doesn't match
+                if (!req.header("secret") || req.header("secret") !== process.env.SHARED_API_SECRET)
+                    return res.status(403).json({ error: "Wrong Secret" });
 
-                    // Abort if `channel` is missing
-                    if (!req.query.channel) return res.status(400).json({ error: "Parameter `channel` missing" });
+                // Abort if `channel` is missing
+                if (!req.query.channel) return res.status(400).json({ error: "Parameter `channel` missing" });
 
-                    const moderators = await client.client.getMods(req.query.channel);
+                if (!this.client.client) return res.status(500).json({ error: "No ChatClient present" });
 
-                    // Return list of Moderators for Channel
-                    res.status(200).json({ moderators });
-                } catch (error) {
-                    signale.error(`Error getting Moderators for \`${req.query.channel}\``);
-                    signale.error(error);
+                const moderators = await this.client.client.getMods(req.query.channel as string);
 
-                    // Handle Errors
-                    res.status(500).json({ error: "Error getting Channels" });
-                }
-            })
-            .listen(process.env.PORT || 3000);
-    }
+                // Return list of Moderators for Channel
+                res.status(200).json({ moderators });
+            } catch (error) {
+                signale.error(`Error getting Moderators for \`${req.query.channel}\``);
+                signale.error(error);
+
+                // Handle Errors
+                res.status(500).json({ error: "Error getting Channels" });
+            }
+        })
+        .listen(process.env.BOT_PORT || 3001);
+
+    constructor(private client: TwitchClient) {}
 }

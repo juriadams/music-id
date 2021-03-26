@@ -2,10 +2,16 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 /**
- * Create Sentry Daemon if outside `development` Environment
+ * Create Sentry Daemon
  */
-import * as sentry from "@sentry/node";
-if (process.env.NODE_ENV !== "development") sentry.init({ dsn: process.env.SENTRY_DSN });
+import * as Sentry from "@sentry/node";
+import * as Tracing from "@sentry/tracing";
+
+if (process.env.NODE_ENV === "production")
+    Sentry.init({
+        dsn: process.env.BOT_SENTRY_DSN,
+        tracesSampleRate: 1.0,
+    });
 
 /**
  * Import Bot Components
@@ -24,8 +30,8 @@ import GraphQL from "./components/graphql";
 const graphql = new GraphQL();
 const channels = new Channels(graphql);
 const identifier = new Identifier(graphql);
-const composer = new MessageComposer(channels);
-const handler = new MessageHandler(graphql, channels, composer, identifier);
-const client = new TwitchClient(channels, handler);
+const composer = new MessageComposer();
+const handler = new MessageHandler(channels, composer, identifier);
+const client = new TwitchClient(graphql, channels, handler);
 
 new Server(client);
