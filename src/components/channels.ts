@@ -182,9 +182,7 @@ export default class Channels {
                     const channel = this.configurations.get(id);
 
                     if (!channel)
-                        return signale.warn(
-                            `Could not find configuration for Channel with Id \`${id}\`, hence nothing to unlink`,
-                        );
+                        return signale.warn(`Could not find configuration for Channel with Id \`${id}\`, hence nothing to unlink`);
 
                     signale.info(`Configuration for Channel \`${channel.name}\` was deleted`);
 
@@ -260,7 +258,7 @@ export default class Channels {
             }
 
             // Calculate seconds left until next Identification may be attempted
-            const since = Math.round(Math.abs((new Date().getTime() - identification.date.getTime()) / 1000));
+            const since = Math.round(Math.abs((new Date().getTime() - new Date(identification.date).getTime()) / 1000));
             const remaining = channel.cooldown - since;
 
             // Check if Channel is on cooldown
