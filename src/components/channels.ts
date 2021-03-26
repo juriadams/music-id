@@ -297,7 +297,7 @@ export default class Channels {
             throw Error(`Could not find Channel configuration for Channel \`${channel}\``);
         }
 
-        return await this.graphql.client
+        return this.graphql.client
             .mutate({
                 mutation: UPDATE_CHANNEL,
                 variables: { id: config.id, enabled: false },
