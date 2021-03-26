@@ -13,7 +13,7 @@ export default class Identifier {
      * @param message Message which was used to request Song Identification
      */
     public async identify(channel: string, requester: string, message: string): Promise<Identification> {
-        return await this.graphql.client
+        return this.graphql.client
             .query({
                 query: IDENTIFY,
                 variables: { channel, requester, message },
