@@ -14,7 +14,7 @@ export default class MessageComposer {
      * @param song Identified Song object
      */
     public SUCCESS = (channel: Channel, user: ChatUser, song: Song): string => {
-        const template = channel.templates.find((template) => template.type === "ERROR")?.template || null;
+        const template = channel.templates.find((template) => template.type === "SUCCESS")?.template || null;
 
         if (!template) {
             signale.error(`Could not find Template of type \`SUCCESS\`  for Channel \`${channel}\``);
