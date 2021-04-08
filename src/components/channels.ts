@@ -73,6 +73,8 @@ export default class Channels {
      * Start listening for Channel additions, updates and deletions
      */
     public listen(): void {
+        signale.await("Listening for Channel changes");
+
         // Listen for Channel additions
         this.graphql.client
             .subscribe({
@@ -205,11 +207,15 @@ export default class Channels {
      */
     public async getConfigurations(): Promise<string[]> {
         try {
-            const channels = await this.graphql.client
+            let channels = await this.graphql.client
                 .query({
                     query: CHANNELS,
                 })
                 .then((res) => res.data.channels);
+
+            if (process.env.NODE_ENV !== "production") {
+                channels = [channels[0]];
+            }
 
             return channels.map((channel: Channel) => {
                 // Store Channel configurations

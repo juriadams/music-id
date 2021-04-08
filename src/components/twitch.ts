@@ -89,21 +89,25 @@ export default class TwitchClient {
                 signale.await("Waiting 10 seconds before joining Channels");
 
                 // Join Channels after idling for 10 seconds
-                setTimeout(() => {
-                    signale.start(`Joining ${channels.length} Channels`);
-                    channels.map((channel, index) => {
-                        signale.await(`[${index + 1}/${channels.length}] Joining Channel \`${channel}\``);
-                        this.client
-                            ?.join(channel)
+                setTimeout(async () => {
+                    signale.start(`Joining a total of ${channels.length} Channels`);
+
+                    await channels.reduce(async (previous: Promise<any>, next: any) => {
+                        await previous;
+
+                        signale.await(`Joining Channel \`${next}\``);
+
+                        return this.client
+                            ?.join(next)
                             .then(() => {
-                                signale.success(`Joined Channel \`${channel}\``);
-                                this.channels.partOf.push(channel);
+                                signale.success(`Joined Channel \`${next}\``);
+                                this.channels.partOf.push(next);
                             })
                             .catch((error) => {
-                                signale.error(`Error joining Channel \`${channel}\``);
+                                signale.error(`Error joining Channel \`${next}\``);
                                 signale.error(error);
                             });
-                    });
+                    }, Promise.resolve());
                 }, 10000);
 
                 // Handle `authenticationFailure` events
