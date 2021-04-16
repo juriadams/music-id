@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/node";
 import { TwitchPrivateMessage } from "twitch-chat-client/lib/StandardCommands/TwitchPrivateMessage";
 import { RefreshableAuthProvider, StaticAuthProvider } from "twitch-auth";
 import { ChatClient } from "twitch-chat-client";
+import { ApiClient } from "twitch";
 import signale from "signale";
 
 import Channels from "./channels";
@@ -17,6 +18,16 @@ export default class TwitchClient {
      * Publicly accessible ChatClient instance
      */
     public client?: ChatClient;
+
+    /**
+     * Publicly Accessible Auth Provider
+     */
+    public auth?: RefreshableAuthProvider;
+
+    /**
+     * Publicly accessible Twitch API Client Instance
+     */
+    public api?: ApiClient;
 
     constructor(private graphql: GraphQL, public channels: Channels, private handler: MessageHandler) {
         (async () => {
@@ -46,7 +57,7 @@ export default class TwitchClient {
                 signale.success(`Received Channel configurations (${channels.length} total)`);
 
                 // Create new Twitch Auth provider
-                const auth = new RefreshableAuthProvider(new StaticAuthProvider(client.clientId, client.accessToken), {
+                this.auth = new RefreshableAuthProvider(new StaticAuthProvider(client.clientId, client.accessToken), {
                     clientSecret: client.clientSecret,
                     refreshToken: client.refreshToken,
                     expiry: client.expiresAt ? new Date(client.expiresAt) : null,
@@ -74,10 +85,13 @@ export default class TwitchClient {
                     },
                 });
 
+                // Create new API Client
+                this.api = new ApiClient({ authProvider: this.auth });
+
                 // Create new Chat Client
-                this.client = new ChatClient(auth, {
+                this.client = new ChatClient(this.auth, {
                     botLevel: "verified",
-                    channels: [client.name],
+                    channels: [client.name, "mr4dams"],
                 });
 
                 signale.await("Connecting ChatClient");
@@ -138,7 +152,10 @@ export default class TwitchClient {
                     signale.error(`Error sending message in Channel \`${channel}\`, likely due to rate limits`);
                 });
 
-                // Hand Client over to Channels Class and start listening for updates and additions
+                // Hand over API Client to Handler Class
+                this.handler.api = this.api;
+
+                // Hand over Chat Client to Channels Class and start listening for updates and additions
                 this.channels.client = this.client;
                 this.channels.listen();
             } catch (error) {

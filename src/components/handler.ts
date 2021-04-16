@@ -6,8 +6,14 @@ import signale from "signale";
 import MessageComposer from "./composer";
 import Identifier from "./identifier";
 import Channels from "./channels";
+import { ApiClient } from "twitch/lib";
 
 export default class MessageHandler {
+    /**
+     * Twitch API Client Instance
+     */
+    public api?: ApiClient;
+
     constructor(private channels: Channels, private composer: MessageComposer, private identifier: Identifier) {}
 
     /**
@@ -17,7 +23,7 @@ export default class MessageHandler {
      * @param sender User who sent the Message
      * @param client Twitch client instance
      */
-    public handle(channel: string, message: string, user: ChatUser, client: ChatClient): void | Promise<void> {
+    public async handle(channel: string, message: string, user: ChatUser, client: ChatClient): Promise<void> {
         channel = channel.toLowerCase().replace("#", "");
 
         const isHostChannel = ["mr4dams", "twitchmusicid", this.channels.client?.currentNick].includes(channel);
@@ -26,7 +32,11 @@ export default class MessageHandler {
 
         // Handle identifications for different Channels
         if (isHostChannel && ["!song", "!id", "!identify"].includes(command)) {
-            if (!target) return client.action(channel, `Missing 𝗰𝗵𝗮𝗻𝗻𝗲𝗹 parameter. Command usage: ${command} 𝗰𝗵𝗮𝗻𝗻𝗲𝗹`);
+            if (!target) return client.action(channel, `Please provide a channel name! Command usage: ${command} <channel>`);
+
+            // Check if Channel is live
+            const stream = await this.api?.helix?.streams?.getStreamByUserName(target);
+            if (!stream) return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
 
             return this.identify(channel, target, user, message, client);
         }
@@ -43,6 +53,13 @@ export default class MessageHandler {
 
         // Handle Identifications
         if (config.triggers.some((trigger) => message.toLowerCase().includes(trigger.keyword))) {
+            // Check if Channel is live
+            const stream = await this.api?.helix?.streams?.getStreamByUserName(channel);
+            if (!stream)
+                return config.actions
+                    ? client.action(channel, `${channel} seems to be offline. Please try again with a live channel.`)
+                    : client.say(channel, `${channel} seems to be offline. Please try again with a live channel.`);
+
             this.identify(channel, channel, user, message, client);
         }
     }
