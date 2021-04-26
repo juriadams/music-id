@@ -202,6 +202,34 @@ export default class Channels {
     }
 
     /**
+     * Update the configuration for a specific Channel
+     * @returns Configuration object for the Channel
+     */
+    public async updateChannel(id: string): Promise<Channel> {
+        try {
+            const channel = await this.graphql.client
+                .query({
+                    query: CHANNEL,
+                    variables: { id },
+                })
+                .then((res) => res.data.channel);
+
+            this.configurations.set(channel.name, channel);
+            this.pending.set(channel.name, false);
+            this.cooldownNotice.set(channel.name, false);
+
+            return channel;
+        } catch (error) {
+            Sentry.captureException(error);
+
+            signale.fatal(`An unexpected error occurred while fetching the Channel configuration for ${id}`);
+            signale.fatal(error);
+
+            throw new Error(`An unexpected error occurred while fetching the Channel configuration for ${id}`);
+        }
+    }
+
+    /**
      * Get Channel configurations for all enabled Channels
      * @returns Array of Channel names
      */
