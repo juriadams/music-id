@@ -37,30 +37,25 @@ export default class MessageComposer {
      * @param identification Latest Identification (optional)
      */
     public COOLDOWN = (channel: Channel, user: ChatUser, remaining: number, identification?: Identification): string => {
-        const template =
-            channel.templates.find((template) => (template.type === identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"))
-                ?.template || null;
+        // Get latest identified Song
+        const song = identification?.songs[0];
+
+        const template = song
+            ? channel.templates.find(({ type }) => type === "COOLDOWN_WITH_ID")?.template || null
+            : channel.templates.find(({ type }) => type === "COOLDOWN")?.template || null;
 
         if (!template) {
-            signale.error(
-                `Could not find Template of type \`${
-                    identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"
-                }\` for Channel \`${channel}\``,
-            );
-            throw new Error(
-                `Could not find Template of type \`${
-                    identification?.songs[0] ? "COOLDOWN_WITH_ID" : "COOLDOWN"
-                }\` for Channel \`${channel}\``,
-            );
+            signale.error(`Could not find Template of type \`${song ? "COOLDOWN_WITH_ID" : "COOLDOWN"}\` for Channel \`${channel}\``);
+            throw new Error(`Could not find Template of type \`${song ? "COOLDOWN_WITH_ID" : "COOLDOWN"}\` for Channel \`${channel}\``);
         }
 
-        return identification?.songs[0]
+        return song
             ? template
                   .replace("%REQUESTER%", user.userName)
-                  .replace("%TITLE%", identification.songs[0].title)
-                  .replace("%ARTIST%", identification.songs[0].artists as string)
-                  .replace("%TIME%", moment(identification.date).fromNow())
-                  .concat(channel.links && identification.songs[0].url ? ` → ${identification.songs[0].url}` : "")
+                  .replace("%TITLE%", song.title)
+                  .replace("%ARTIST%", song.artists as string)
+                  .replace("%TIME%", moment((identification as Identification).date).fromNow())
+                  .concat(channel.links && song.url ? ` → ${song.url}` : "")
             : template.replace("%REQUESTER%", user.userName).replace("%REMAINING%", remaining.toString());
     };
 
