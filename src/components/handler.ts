@@ -114,6 +114,12 @@ export default class MessageHandler {
 
                 signale.await("Waiting for results");
 
+                // Forcefully reset Channels `pending` and `cooldownNotice` state after 10 seconds
+                setTimeout(() => {
+                    this.channels.pending.set(config.id, false);
+                    this.channels.cooldownNotice.set(config.id, false);
+                }, 10000);
+
                 // Identify Songs for targetChannel
                 const identification = await this.identifier.identify(target, user.userName, message);
                 const { songs } = identification;
