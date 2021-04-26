@@ -23,8 +23,9 @@ export default class Server {
                 if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.SHARED_API_SECRET)
                     return res.status(403).json({ error: "Wrong Secret" });
 
-                // Return list of Channels the Bot is part of
+                // Return list of Channels the Bot is part of and boolean if the Client is currently connected
                 res.status(200).json({
+                    isConnected: this.client.client?.isConnected,
                     channels: this.client.channels.partOf,
                 });
             } catch (error) {

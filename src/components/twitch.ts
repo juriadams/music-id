@@ -152,6 +152,18 @@ export default class TwitchClient {
                     signale.error(`Error sending message in Channel \`${channel}\`, likely due to rate limits`);
                 });
 
+                // Handle `onDisconnect` events
+                this.client.onDisconnect((manually, reason) => {
+                    signale.error(`ChatClient disconnected from Twitch`);
+                    signale.error(`Manually: ${manually}`);
+                    signale.error(`Reason: ${reason}`);
+
+                    Sentry.captureException(`ChatClient disconnected, reason: ${reason}`);
+
+                    // Exit process if Client was not disconnected manually
+                    if (!manually) process.exit(1);
+                });
+
                 // Hand over API Client to Handler Class
                 this.handler.api = this.api;
 
