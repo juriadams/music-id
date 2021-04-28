@@ -29,7 +29,6 @@ export default class MessageHandler {
         const isHostChannel = ["mr4dams", "twitchmusicid", this.channels.client?.currentNick?.toLowerCase()].includes(channel);
         const command = message.toLowerCase().split(" ")[0];
         const target = message.toLowerCase().split(" ")[1];
-        const provider = message.toLowerCase().split(" ")[2];
 
         // Handle identification requests from host channels
         if (isHostChannel && ["!song", "!id", "!identify"].includes(command)) {
@@ -39,7 +38,8 @@ export default class MessageHandler {
             const stream = await this.api?.helix?.streams?.getStreamByUserName(target);
             if (!stream) return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
 
-            return this.identify(channel, target, user, message, client, provider);
+            // TODO: Remove `provider` parameter after testing period
+            return this.identify(channel, target, user, message, client, message.toLowerCase().split(" ")[2].toUpperCase());
         }
 
         // Get Configuration for current Channel
@@ -92,8 +92,8 @@ export default class MessageHandler {
      * @param target Channel to identify Songs in
      * @param user ChatUser who requested identification
      * @param message Message used to start identification
-     * @param optional Provider parameter
      * @param client ChatClient to respond with
+     * @param provider Provider to use to identify Songs
      * @returns A Promise resolving nothing
      */
     public async identify(
@@ -151,7 +151,7 @@ export default class MessageHandler {
                 }, 10000);
 
                 // Identify Songs for targetChannel
-                const identification = await this.identifier.identify(target, user.userName, message);
+                const identification = await this.identifier.identify(target, user.userName, message, provider);
                 const { songs } = identification;
 
                 songs.length > 0
@@ -202,23 +202,24 @@ export default class MessageHandler {
                 // Identify Songs for targetChannel
                 const identification = await this.identifier.identify(target, user.userName, message, provider);
                 const { songs } = identification;
+                const song = songs[0];
 
-                songs.length > 0
+                song
                     ? signale.success(`Identified ${songs.length} Songs for target Channel \`${target}\``)
                     : signale.warn(`Could not identify any Songs for target Channel \`${target}\``);
 
-                return songs.length > 0
-                    ? client.action(host, `@${user.displayName} → Detected "${songs[0].title}" by ${songs[0].artists}`).then(() => {
+                return song
+                    ? client.action(host, `${target} is currently playing "${song.title}" by ${song.artists} → ${song.url}`).then(() => {
                           signale.success(`Sent response in Channel \`${host}\``);
                       })
-                    : client.action(host, `@${user.displayName} → Could not identify any Songs`).then(() => {
+                    : client.action(host, `Could not identify Songs in Channel ${target}`).then(() => {
                           signale.success(`Sent response in Channel \`${host}\``);
                       });
             } catch (error) {
-                Sentry.captureException(error);
-
                 signale.error(`Unexpected error while identifying Songs in target Channel \`${target}\``);
                 signale.error(error);
+
+                Sentry.captureException(error);
 
                 client.action(host, `@${user.displayName} → Unexpected error: ${error.message}`).then(() => {
                     signale.success(`Sent error message in Channel \`${host}\``);
