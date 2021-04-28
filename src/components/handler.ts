@@ -39,7 +39,7 @@ export default class MessageHandler {
             if (!stream) return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
 
             // TODO: Remove `provider` parameter after testing period
-            return this.identify(channel, target, user, message, client, message.toLowerCase().split(" ")[2].toUpperCase());
+            return this.identify(channel, target, user, message, client, message.toLowerCase().split(" ")[2]?.toUpperCase());
         }
 
         // Get Configuration for current Channel
