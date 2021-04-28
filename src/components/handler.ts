@@ -26,11 +26,12 @@ export default class MessageHandler {
     public async handle(channel: string, message: string, user: ChatUser, client: ChatClient): Promise<void> {
         channel = channel.toLowerCase().replace("#", "");
 
-        const isHostChannel = ["mr4dams", "twitchmusicid", this.channels.client?.currentNick].includes(channel);
+        const isHostChannel = ["mr4dams", "twitchmusicid", this.channels.client?.currentNick?.toLowerCase()].includes(channel);
         const command = message.toLowerCase().split(" ")[0];
         const target = message.toLowerCase().split(" ")[1];
+        const provider = message.toLowerCase().split(" ")[2];
 
-        // Handle identifications for different Channels
+        // Handle identification requests from host channels
         if (isHostChannel && ["!song", "!id", "!identify"].includes(command)) {
             if (!target) return client.action(channel, `Please provide a channel name! Command usage: ${command} <channel>`);
 
@@ -38,7 +39,7 @@ export default class MessageHandler {
             const stream = await this.api?.helix?.streams?.getStreamByUserName(target);
             if (!stream) return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
 
-            return this.identify(channel, target, user, message, client);
+            return this.identify(channel, target, user, message, client, provider);
         }
 
         // Get Configuration for current Channel
@@ -91,10 +92,18 @@ export default class MessageHandler {
      * @param target Channel to identify Songs in
      * @param user ChatUser who requested identification
      * @param message Message used to start identification
+     * @param optional Provider parameter
      * @param client ChatClient to respond with
      * @returns A Promise resolving nothing
      */
-    public async identify(host: string, target: string, user: ChatUser, message: string, client: ChatClient): Promise<void> {
+    public async identify(
+        host: string,
+        target: string,
+        user: ChatUser,
+        message: string,
+        client: ChatClient,
+        provider?: string,
+    ): Promise<void> {
         signale.start(`Song identification requested for Channel \`${target}\` by \`${user.userName}\``);
 
         // If identification was requested for the Channel the command was sent in
@@ -191,7 +200,7 @@ export default class MessageHandler {
                 signale.await("Waiting for results");
 
                 // Identify Songs for targetChannel
-                const identification = await this.identifier.identify(target, user.userName, message);
+                const identification = await this.identifier.identify(target, user.userName, message, provider);
                 const { songs } = identification;
 
                 songs.length > 0

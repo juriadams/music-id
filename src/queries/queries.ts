@@ -138,8 +138,8 @@ export const MENTION = gql`
 `;
 
 export const IDENTIFY = gql`
-    query Songs($channel: String!, $requester: String!, $message: String!) {
-        identify(channel: $channel, requester: $requester, message: $message) {
+    query Songs($channel: String!, $requester: String!, $message: String!, $provider: String) {
+        identify(channel: $channel, requester: $requester, message: $message, provider: $provider) {
             id
             successful
             date
