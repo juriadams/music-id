@@ -31,4 +31,4 @@ COPY --from=development /app/dist ./dist
 # Install pm2 daemon
 RUN yarn global add pm2
 
-CMD ["pm2-runtime", "dist/index.js", "--output", "/tmp/logs/out.log", "--error", "/tmp/logs/error.log"]
+CMD ["pm2-runtime", "dist/index.js", "--output", "/tmp/logs/out.log", "--error", "/tmp/logs/error.log", "--machine-name", "bot"]
