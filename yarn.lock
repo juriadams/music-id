@@ -2024,6 +2024,18 @@ twitch-api-call@^4.5.0:
     tslib "^2.0.3"
     twitch-common "^4.5.0"
 
+twitch-api-call@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-api-call/-/twitch-api-call-4.5.5.tgz#3093df4f494e5ad3c24b971d55b2ef0bb0c292ee"
+  integrity sha512-y/S78g7TYGZDJqIPxuE0GTFMZ/hNpgGCCFs7RN+XVBPDU76aLZ8xnvP2pTlutcGTon6xCp7wCyr8c1R6d8zMfQ==
+  dependencies:
+    "@d-fischer/cross-fetch" "^4.0.2"
+    "@d-fischer/qs" "^7.0.2"
+    "@types/node-fetch" "^2.5.7"
+    node-fetch "^2.6.1"
+    tslib "^2.0.3"
+    twitch-common "^4.5.5"
+
 twitch-auth@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/twitch-auth/-/twitch-auth-4.5.0.tgz#f5211d3da208e98506a6127e7208f6957b541a64"
@@ -2035,6 +2047,18 @@ twitch-auth@^4.5.0:
     tslib "^2.0.3"
     twitch-api-call "^4.5.0"
     twitch-common "^4.5.0"
+
+twitch-auth@^4.5.4:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-auth/-/twitch-auth-4.5.5.tgz#967c752d52b1c8c1846f57a7c8f34812f350d493"
+  integrity sha512-1olaVz1SOkd67g3l1chiZYldR+hYt+zoggGR4u1HhFuqGiU9g5v9bUs7nOsHSodJ98e1UYKyAdPIW1MToMNxLg==
+  dependencies:
+    "@d-fischer/deprecate" "^2.0.2"
+    "@d-fischer/logger" "^3.1.0"
+    "@d-fischer/shared-utils" "^3.0.1"
+    tslib "^2.0.3"
+    twitch-api-call "^4.5.5"
+    twitch-common "^4.5.5"
 
 twitch-chat-client@^4.5.0:
   version "4.5.0"
@@ -2056,6 +2080,15 @@ twitch-common@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/twitch-common/-/twitch-common-4.5.0.tgz#c2db02dc8d9fac8f0b0958546d64a57b38e3746d"
   integrity sha512-upz4UGNUDJxwQnL3eOZ+r0Mp5BpCx3571F5JQN5wiZm5W5ALg6dgLUxmae/uA7PllJJJhoeQTI6n+Bqy7GXuFA==
+  dependencies:
+    "@d-fischer/logger" "^3.1.0"
+    "@d-fischer/shared-utils" "^3.0.1"
+    tslib "^2.0.3"
+
+twitch-common@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-common/-/twitch-common-4.5.5.tgz#fc47472db69d1d12502b9f9bbf91575fbb408bf3"
+  integrity sha512-O846PVf1rFNdziuWPQXwvfEZgudrXaMv1VWSv+D4x1/vtSBNzF8mzsK6wLMODFuMA6RVGNTqcZFNL6WZUUzRfg==
   dependencies:
     "@d-fischer/logger" "^3.1.0"
     "@d-fischer/shared-utils" "^3.0.1"
