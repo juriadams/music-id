@@ -2024,6 +2024,18 @@ twitch-api-call@^4.5.0:
     tslib "^2.0.3"
     twitch-common "^4.5.0"
 
+twitch-api-call@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-api-call/-/twitch-api-call-4.5.5.tgz#3093df4f494e5ad3c24b971d55b2ef0bb0c292ee"
+  integrity sha512-y/S78g7TYGZDJqIPxuE0GTFMZ/hNpgGCCFs7RN+XVBPDU76aLZ8xnvP2pTlutcGTon6xCp7wCyr8c1R6d8zMfQ==
+  dependencies:
+    "@d-fischer/cross-fetch" "^4.0.2"
+    "@d-fischer/qs" "^7.0.2"
+    "@types/node-fetch" "^2.5.7"
+    node-fetch "^2.6.1"
+    tslib "^2.0.3"
+    twitch-common "^4.5.5"
+
 twitch-auth@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/twitch-auth/-/twitch-auth-4.5.0.tgz#f5211d3da208e98506a6127e7208f6957b541a64"
@@ -2035,6 +2047,18 @@ twitch-auth@^4.5.0:
     tslib "^2.0.3"
     twitch-api-call "^4.5.0"
     twitch-common "^4.5.0"
+
+twitch-auth@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-auth/-/twitch-auth-4.5.5.tgz#967c752d52b1c8c1846f57a7c8f34812f350d493"
+  integrity sha512-1olaVz1SOkd67g3l1chiZYldR+hYt+zoggGR4u1HhFuqGiU9g5v9bUs7nOsHSodJ98e1UYKyAdPIW1MToMNxLg==
+  dependencies:
+    "@d-fischer/deprecate" "^2.0.2"
+    "@d-fischer/logger" "^3.1.0"
+    "@d-fischer/shared-utils" "^3.0.1"
+    tslib "^2.0.3"
+    twitch-api-call "^4.5.5"
+    twitch-common "^4.5.5"
 
 twitch-chat-client@^4.5.0:
   version "4.5.0"
@@ -2061,10 +2085,19 @@ twitch-common@^4.5.0:
     "@d-fischer/shared-utils" "^3.0.1"
     tslib "^2.0.3"
 
-twitch@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/twitch/-/twitch-4.5.0.tgz#0c43aa579a528125c74dc5b58e25d2c88cabb6f2"
-  integrity sha512-h+MPcq46xsGvk0nHtGScN4x/chjehW6/6/QCzLlkgaC4MKYTRuaBV2nkT5l/rddyhYfFqi1DaGW+fjjzLSla5Q==
+twitch-common@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch-common/-/twitch-common-4.5.5.tgz#fc47472db69d1d12502b9f9bbf91575fbb408bf3"
+  integrity sha512-O846PVf1rFNdziuWPQXwvfEZgudrXaMv1VWSv+D4x1/vtSBNzF8mzsK6wLMODFuMA6RVGNTqcZFNL6WZUUzRfg==
+  dependencies:
+    "@d-fischer/logger" "^3.1.0"
+    "@d-fischer/shared-utils" "^3.0.1"
+    tslib "^2.0.3"
+
+twitch@^4.5.4:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/twitch/-/twitch-4.5.5.tgz#c7c6470f1d9d709c7321e2069ff3943076bbf259"
+  integrity sha512-2chuylVYIesLCkJ49yqwf5HhItzaiwvhcrm/OXJnv0iKhEGpf2c3uVAhICa/0fnrdF+TfpUXtA4iLW8IVxTcig==
   dependencies:
     "@d-fischer/cache-decorators" "^2.1.1"
     "@d-fischer/deprecate" "^2.0.2"
@@ -2073,9 +2106,9 @@ twitch@^4.5.0:
     "@d-fischer/shared-utils" "^3.0.1"
     top-package "^1.0.0"
     tslib "^2.0.3"
-    twitch-api-call "^4.5.0"
-    twitch-auth "^4.5.0"
-    twitch-common "^4.5.0"
+    twitch-api-call "^4.5.5"
+    twitch-auth "^4.5.5"
+    twitch-common "^4.5.5"
 
 type-fest@^0.8.1:
   version "0.8.1"
