@@ -31,7 +31,15 @@ export default class MessageHandler {
         const target = message.toLowerCase().split(" ")[1];
 
         // Handle identification requests from host channels
-        if (isHostChannel && ["!song", "!id", "!identify"].includes(command)) {
+        if (isHostChannel) {
+            // Abort if message does not contain one of these commands
+            if (!["!song", "!id", "!identify"].includes(command))
+                return client.action(
+                    channel,
+                    `Want to know what song is playing in a channel? Type !song <channel> – Want me in your chat? → https://adams.sh/id`,
+                );
+
+            // Check if a `target` was specified
             if (!target) return client.action(channel, `Please provide a channel name! Command usage: ${command} <channel>`);
 
             // Check if Channel is live
