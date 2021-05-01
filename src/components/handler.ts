@@ -61,25 +61,25 @@ export default class MessageHandler {
         }
 
         // Handle Resets
-        if (command === "!reload" && user.isMod) {
-            signale.warn(`Reloading configuration for ${channel}`);
+        // if (command === "!reload" && user.isMod) {
+        //     signale.warn(`Reloading configuration for ${channel}`);
 
-            try {
-                await this.channels.updateChannel(config.id);
+        //     try {
+        //         await this.channels.updateChannel(config.id);
 
-                signale.success(`Successfully reloaded configuration for ${channel}`);
-                config.actions
-                    ? client.action(channel, `Successfully reloaded channel configuration for ${channel}.`)
-                    : client.say(channel, `Successfully reloaded channel configuration for ${channel}.`);
-            } catch (error) {
-                signale.error(`Error reloading configuration for \`${channel}\``);
-                Sentry.captureException(new Error(`Error reloading configuration for \`${channel}\``));
+        //         signale.success(`Successfully reloaded configuration for ${channel}`);
+        //         config.actions
+        //             ? client.action(channel, `Successfully reloaded channel configuration for ${channel}.`)
+        //             : client.say(channel, `Successfully reloaded channel configuration for ${channel}.`);
+        //     } catch (error) {
+        //         signale.error(`Error reloading configuration for \`${channel}\``);
+        //         Sentry.captureException(new Error(`Error reloading configuration for \`${channel}\``));
 
-                config.actions
-                    ? client.action(channel, `An error occurred reloading the channel configuration for ${channel}.`)
-                    : client.say(channel, `An error occurred reloading the channel configuration for ${channel}.`);
-            }
-        }
+        //         config.actions
+        //             ? client.action(channel, `An error occurred reloading the channel configuration for ${channel}.`)
+        //             : client.say(channel, `An error occurred reloading the channel configuration for ${channel}.`);
+        //     }
+        // }
 
         // Handle Identifications
         if (config.triggers.some((trigger) => message.toLowerCase().includes(trigger.keyword))) {
