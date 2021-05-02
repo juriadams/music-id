@@ -12,7 +12,7 @@
     "author": "Juri Adams <juri@adams.sh>",
     "license": "AGPL-3.0",
     "dependencies": {
-        "@apollo/client": "^3.3.7",
+        "@apollo/client": "^3.3.14",
         "@apollo/link-ws": "^2.0.0-beta.3",
         "@sentry/node": "^6.2.2",
         "@sentry/tracing": "^6.2.2",
