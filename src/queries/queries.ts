@@ -53,31 +53,6 @@ export const UPDATE_CLIENT = gql`
     }
 `;
 
-export const CHANNEL = gql`
-    query Channel($id: String!) {
-        channel(id: $id) {
-            id
-            name
-            enabled
-            cooldown
-            actions
-            links
-            dateAdded
-            identifications {
-                id
-            }
-            triggers(enabled: true) {
-                id
-                keyword
-            }
-            templates {
-                type
-                template
-            }
-        }
-    }
-`;
-
 export const CHANNELS = gql`
     query Channels {
         channels(enabled: true) {
@@ -88,16 +63,39 @@ export const CHANNELS = gql`
             actions
             links
             dateAdded
-            identifications {
-                id
-            }
             triggers(enabled: true) {
                 id
                 keyword
             }
             templates {
-                type
-                template
+                success
+                cooldown
+                previousCooldown
+                error
+            }
+        }
+    }
+`;
+
+export const CHANNEL = gql`
+    query Channel($id: String!) {
+        channel(id: $id) {
+            id
+            name
+            enabled
+            cooldown
+            actions
+            links
+            dateAdded
+            triggers(enabled: true) {
+                id
+                keyword
+            }
+            templates {
+                success
+                cooldown
+                previousCooldown
+                error
             }
         }
     }
@@ -105,14 +103,23 @@ export const CHANNELS = gql`
 
 export const LATEST_IDENTIFICATION = gql`
     query Identification($id: String!) {
-        channel(id: $id) {
-            identifications(limit: 1) {
-                date
-                songs {
-                    title
-                    artists
-                    timecode
-                    url
+        identifications(channel: $id, limit: 1) {
+            id
+            successful
+            date
+            since
+            songs {
+                title
+                artists {
+                    id
+                    name
+                }
+                url
+                platforms {
+                    spotify
+                    apple
+                    deezer
+                    youtube
                 }
             }
         }
@@ -129,31 +136,39 @@ export const UPDATE_CHANNEL = gql`
     }
 `;
 
-export const MENTION = gql`
-    mutation Mention($channel: String!, $message: String!, $sender: String!) {
-        addMention(mention: { channel: $channel, message: $message, sender: $sender }) {
-            id
-        }
-    }
-`;
-
 export const IDENTIFY = gql`
-    query Songs($channel: String!, $requester: String!, $message: String!, $provider: String) {
-        identify(channel: $channel, requester: $requester, message: $message, provider: $provider) {
+    query Songs($channel: String!, $requester: String!, $message: String!) {
+        identify(channel: $channel, requester: $requester, message: $message) {
             id
             successful
-            date
+            provider
             songs {
                 id
+                provider
+                providerId
+                isrc
                 title
-                album
-                artists
+                artists {
+                    id
+                    name
+                }
+                albums {
+                    id
+                    name
+                }
                 label
-                score
                 releaseDate
                 url
-                duration
-                timecode
+                platforms {
+                    spotify
+                    apple
+                    deezer
+                    youtube
+                }
+            }
+            triggers {
+                id
+                keyword
             }
         }
     }

@@ -1,14 +1,12 @@
-import { Channel } from "./channel.interface";
 import { Song } from "./song.interface";
 import { Trigger } from "./trigger.interface";
 
 export interface Identification {
     id: string;
-    channel: Partial<Channel>;
-    requester: string;
     successful: boolean;
+    provider: string;
     date: Date;
-    message: string;
-    triggers: Partial<Trigger>[];
+    since: number;
     songs: Song[];
+    triggers: Partial<Trigger>[];
 }

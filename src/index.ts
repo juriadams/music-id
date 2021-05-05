@@ -28,10 +28,10 @@ import GraphQL from "./components/graphql";
  * Instanciate Bot Components
  */
 const graphql = new GraphQL();
+const composer = new MessageComposer();
 const channels = new Channels(graphql);
 const identifier = new Identifier(graphql);
-const composer = new MessageComposer();
-const handler = new MessageHandler(channels, composer, identifier);
+const handler = new MessageHandler(graphql, channels, composer, identifier);
 const client = new TwitchClient(graphql, channels, handler);
 
 new Server(client);

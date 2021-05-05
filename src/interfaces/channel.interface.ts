@@ -1,5 +1,4 @@
 import { Identification } from "./identification.interface";
-import { Template } from "./template.interface";
 import { Trigger } from "./trigger.interface";
 
 export interface Channel {
@@ -12,7 +11,12 @@ export interface Channel {
     dateAdded: Date;
     identifications: Partial<Identification>[];
     triggers: Trigger[];
-    templates: Partial<Template>[];
+    templates: {
+        success: string;
+        cooldown: string;
+        previousCooldown: string;
+        error: string;
+    };
 
     pending?: boolean;
     cooldownNotice?: boolean;

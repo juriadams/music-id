@@ -1,20 +1,18 @@
-import { Identification } from "./identification.interface";
-
 export interface Song {
     id: string;
-    identification: Identification;
-    acrId: string;
+    provider: string;
+    providerId: string;
     isrc: string;
-    upc: string;
     title: string;
-    album: string;
-    artists: string | string[];
+    artists: { id: string; name: string }[];
+    albums: { id: string; name: string }[];
     label: string;
-    score: number;
-    resultFrom: number;
     releaseDate: Date;
     url: string;
-    urls: string | any;
-    duration: string;
-    timecode: string;
+    platforms: {
+        spotify?: string;
+        apple?: string;
+        deezer?: string;
+        youtube?: string;
+    };
 }

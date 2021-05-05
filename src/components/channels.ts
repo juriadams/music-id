@@ -53,8 +53,9 @@ export default class Channels {
     constructor(private graphql: GraphQL) {}
 
     /**
-     * Get a full Channel configuration by its Id
-     * @param id Id of the Channel configuration to get
+     * Fetch the Configuration for a specific Channel
+     * @param id The `id` of the Channel to fetch
+     * @returns Channel configuration
      */
     public async getChannel(id: string): Promise<Channel> {
         return this.graphql.client
@@ -70,7 +71,7 @@ export default class Channels {
     }
 
     /**
-     * Start listening for Channel additions, updates and deletions
+     * Listen to various GraphQL Subscriptions
      */
     public listen(): void {
         signale.await("Listening for Channel changes");
@@ -127,6 +128,8 @@ export default class Channels {
             .subscribe({
                 next: async (res) => {
                     const id = res.data.channelUpdated.id;
+
+                    signale.debug("YO");
 
                     try {
                         const channel = await this.getChannel(id);
@@ -189,8 +192,8 @@ export default class Channels {
                     signale.info(`Configuration for Channel \`${channel.name}\` was deleted`);
 
                     this.configurations.delete(id);
-                    this.partOf = this.partOf.filter((c) => c !== channel.name);
                     this.client?.part(channel.name);
+                    this.partOf = this.partOf.filter((c) => c !== channel.name);
                 },
                 error: (error) => {
                     Sentry.captureException(error);
@@ -202,8 +205,9 @@ export default class Channels {
     }
 
     /**
-     * Update the configuration for a specific Channel
-     * @returns Configuration object for the Channel
+     * Update the Configuration for a Channel
+     * @param id The `id` of the Channel to update
+     * @returns Updated Channel Configuration
      */
     public async updateChannel(id: string): Promise<Channel> {
         try {
@@ -214,6 +218,7 @@ export default class Channels {
                 })
                 .then((res) => res.data.channel);
 
+            // Store the updated Configuration
             this.configurations.set(channel.name, channel);
             this.pending.set(channel.name, false);
             this.cooldownNotice.set(channel.name, false);
@@ -230,7 +235,7 @@ export default class Channels {
     }
 
     /**
-     * Get Channel configurations for all enabled Channels
+     * Fetch all Channel configurations
      * @returns Array of Channel names
      */
     public async getConfigurations(): Promise<string[]> {
@@ -241,9 +246,7 @@ export default class Channels {
                 })
                 .then((res) => res.data.channels);
 
-            if (process.env.NODE_ENV !== "production") {
-                channels = [channels[0]];
-            }
+            if (process.env.NODE_ENV !== "production") channels = [channels[0]];
 
             return channels.map((channel: Channel) => {
                 // Store Channel configurations
@@ -265,8 +268,9 @@ export default class Channels {
     }
 
     /**
-     * Check if Song identifications are currently on cooldown for a Channel
-     * @param channel Channel configuration object containing the `name` and `id` for the Channel
+     * Check if a Channel is currently on cooldown
+     * @param channel Object containing the Channel configuration
+     * @returns Object containing `onCooldown`, `since`, `remaining`, and latest `identification`
      */
     public async onCooldown(
         channel: Channel,
@@ -282,7 +286,7 @@ export default class Channels {
 
             // Return if no Identification was found
             if (!identification) {
-                signale.warn(`Found no previous Identification for Channel \`${channel.name}\``);
+                signale.warn(`No previous Identification found for Channel \`${channel.name}\``);
                 return {
                     onCooldown: false,
                     since: undefined,
@@ -298,7 +302,7 @@ export default class Channels {
             // Check if Channel is on cooldown
             const onCooldown = since > 0 && since < channel.cooldown;
 
-            signale.info(`${since}s passed since last Identification in Channel \`${channel.name}\``);
+            signale.info(`${since} seconds passed since last Identification in Channel \`${channel.name}\``);
 
             return {
                 onCooldown,
@@ -318,7 +322,8 @@ export default class Channels {
 
     /**
      * Disable a specific Channel
-     * @param channel Name of the Channel to disable
+     * @param channel `name` of the Channel to disable
+     * @returns Updated (disabled) Channel configuration
      */
     public async disable(channel: string): Promise<Channel> {
         signale.await(`Disabling Channel \`${channel}\``);
