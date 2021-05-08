@@ -26,7 +26,7 @@ export const CHANNEL_DELETED = gql`
 
 export const CLIENT = gql`
     query Client($environment: String!) {
-        client(environment: $environment) {
+        client(client: { environment: $environment }) {
             id
             name
             clientId
@@ -40,7 +40,7 @@ export const CLIENT = gql`
 
 export const UPDATE_CLIENT = gql`
     mutation Client($id: String!, $accessToken: String!, $refreshToken: String!, $expiresAt: DateTime!) {
-        updateClient(id: $id, client: { accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt }) {
+        updateClient(client: { id: $id }, data: { accessToken: $accessToken, refreshToken: $refreshToken, expiresAt: $expiresAt }) {
             id
             name
             environment
@@ -61,7 +61,6 @@ export const CHANNELS = gql`
             enabled
             cooldown
             actions
-            links
             dateAdded
             triggers(enabled: true) {
                 id
@@ -79,13 +78,12 @@ export const CHANNELS = gql`
 
 export const CHANNEL = gql`
     query Channel($id: String!) {
-        channel(id: $id) {
+        channel(channel: { id: $id }) {
             id
             name
             enabled
             cooldown
             actions
-            links
             dateAdded
             triggers(enabled: true) {
                 id
@@ -103,7 +101,7 @@ export const CHANNEL = gql`
 
 export const LATEST_IDENTIFICATION = gql`
     query Identification($id: String!) {
-        identifications(channel: $id, limit: 1) {
+        identifications(channel: { id: $id }, limit: 1) {
             id
             successful
             date
@@ -128,7 +126,7 @@ export const LATEST_IDENTIFICATION = gql`
 
 export const UPDATE_CHANNEL = gql`
     mutation Channel($id: String!, $enabled: Boolean!) {
-        updateChannel(id: $id, channel: { enabled: $enabled }) {
+        updateChannel(channel: { id: $id }, data: { enabled: $enabled }) {
             id
             name
             enabled
