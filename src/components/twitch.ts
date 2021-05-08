@@ -4,7 +4,6 @@ import { TwitchPrivateMessage } from "twitch-chat-client/lib/StandardCommands/Tw
 import { RefreshableAuthProvider, StaticAuthProvider } from "twitch-auth";
 import { ChatClient } from "twitch-chat-client";
 import { ApiClient } from "twitch";
-import signale from "signale";
 
 import Channels from "./channels";
 import MessageHandler from "./handler";
@@ -12,6 +11,8 @@ import GraphQL from "./graphql";
 import { CLIENT, UPDATE_CLIENT } from "../queries/queries";
 
 import { Client } from "../interfaces/client.interface";
+
+import { Signale } from "signale";
 
 export default class TwitchClient {
     /**
@@ -31,15 +32,17 @@ export default class TwitchClient {
 
     constructor(private graphql: GraphQL, public channels: Channels, private handler: MessageHandler) {
         (async () => {
+            const logger = new Signale().scope("Twitch", "constructor");
+
             try {
                 // Define environment, fall back to "development" if not explicitly set
                 const environment = process.env.NODE_ENV || "development";
-                if (environment !== "development" && environment !== "production")
-                    throw new Error(
-                        `Specified environment (\`${process.env.NODE_ENV}\`) has no overlap with \`development\` or \`production\``,
-                    );
+                if (environment !== "development" && environment !== "production") {
+                    logger.error(`Specified environment (\`${environment}\`) has no overlap with \`development\` or \`production\``);
+                    throw new Error(`Specified environment (\`${environment}\`) has no overlap with \`development\` or \`production\``);
+                }
 
-                signale.await(`Fetching Client configuration for \`${environment}\``);
+                logger.await(`Fetching Client for environment \`${environment}\``);
 
                 // Fetch Twitch Client for current environment
                 const client: Client = await this.graphql.client
@@ -49,12 +52,10 @@ export default class TwitchClient {
                     })
                     .then((res) => res.data.client);
 
-                signale.success("Received Client configuration");
-
                 // Get configurations for all enabled Channels
                 const channels = await this.channels.getConfigurations();
 
-                signale.success(`Received Channel configurations (${channels.length} total)`);
+                logger.await("Authenticating Client");
 
                 // Create new Twitch Auth provider
                 this.auth = new RefreshableAuthProvider(new StaticAuthProvider(client.clientId, client.accessToken), {
@@ -62,7 +63,7 @@ export default class TwitchClient {
                     refreshToken: client.refreshToken,
                     expiry: client.expiresAt ? new Date(client.expiresAt) : null,
                     onRefresh: async ({ accessToken, refreshToken, expiryDate }) => {
-                        signale.await("Storing refreshed Token");
+                        logger.await(`Storing refreshed Tokens for Client \`${client.name}\``);
 
                         // Store refreshed Token
                         await this.graphql.client
@@ -76,11 +77,11 @@ export default class TwitchClient {
                                 },
                             })
                             .then(() => {
-                                signale.success(`Stored refreshed Token for Client \`${client.name}\` (${client.environment})`);
+                                logger.success(`Stored refreshed Tokens for Client \`${client.name}\``);
                             })
-                            .catch((err) => {
-                                signale.error(`Error storing refreshed Token for Client \`${client.name}\` (${client.environment})`);
-                                signale.error(err);
+                            .catch((error) => {
+                                logger.error(`Error storing refreshed Tokens for Client \`${client.name}\``);
+                                logger.error(error);
                             });
                     },
                 });
@@ -94,40 +95,44 @@ export default class TwitchClient {
                     channels: [client.name, "mr4dams"],
                 });
 
-                signale.await("Connecting ChatClient");
+                logger.await("Connecting to Chat");
 
                 // Connect Chat Client
                 await this.client.connect();
-                signale.success("ChatClient connected");
+                logger.success("Successfully connected to Chat");
 
-                signale.await("Waiting 5 seconds before joining Channels");
+                logger.await("Waiting 5 seconds before joining Channels");
 
                 // Join Channels after idling for 10 seconds
                 setTimeout(async () => {
-                    signale.start(`Joining a total of ${channels.length} Channels`);
+                    logger.start(`Joining ${channels.length} Channels`);
 
                     await channels.reduce(async (previous: Promise<any>, next: any) => {
                         await previous;
 
-                        signale.await(`Joining Channel \`${next}\``);
+                        const logger = new Signale().scope("Twitch", "constructor", next);
+
+                        logger.await("Joining Channel");
 
                         return this.client
                             ?.join(next)
                             .then(() => {
-                                signale.success(`Joined Channel \`${next}\``);
+                                logger.success("Joined Channel");
                                 this.channels.partOf.push(next);
                             })
                             .catch((error) => {
-                                signale.error(`Error joining Channel \`${next}\``);
-                                signale.error(error);
+                                logger.error("Error joining Channel");
+                                logger.error(error);
                             });
                     }, Promise.resolve());
                 }, 5000);
 
                 // Handle `authenticationFailure` events
                 this.client.onAuthenticationFailure((msg) => {
-                    signale.error("Error authenticating ChatClient");
-                    signale.error(msg);
+                    const logger = new Signale().scope("Twitch", "onAuthenticationFailure");
+
+                    logger.error("Error authenticating Client");
+                    logger.error(msg);
                 });
 
                 // Handle `message` events
@@ -138,27 +143,40 @@ export default class TwitchClient {
                 // Handle `ban` events
                 this.client.onBan((channel: string, user: string) => {
                     channel = channel.toLocaleLowerCase().replace("#", "");
+                    const logger = new Signale().scope("Twitch", "onBan", channel);
 
                     if (user === process.env.TWITCH_BOT_USER) {
-                        signale.warn(`Bot was banned in Channel \`${channel}\``);
-                        this.channels.disable(channel);
+                        logger.warn("Bot was banned");
+
+                        logger.await("Disabling Channel");
+                        this.channels
+                            .disableChannel(channel)
+                            .then(() => {
+                                logger.success("Disabled Channel");
+                            })
+                            .catch((error) => {
+                                logger.error("Error disabling Channel");
+                                logger.error(error);
+                            });
                     }
                 });
 
                 // Handle `messageRateLimit` events
                 this.client.onMessageRatelimit((channel: string) => {
                     channel = channel.toLocaleLowerCase().replace("#", "");
+                    const logger = new Signale().scope("Twitch", "onMessageRatelimit", channel);
 
-                    signale.error(`Error sending message in Channel \`${channel}\`, likely due to rate limits`);
+                    logger.error("Rate limited, could not send message");
                 });
 
                 // Handle `onDisconnect` events
                 this.client.onDisconnect((manually, reason) => {
-                    signale.error(`ChatClient disconnected from Twitch`);
-                    signale.error(`Manually: ${manually}`);
-                    signale.error(`Reason: ${reason}`);
+                    const logger = new Signale().scope("Twitch", "onDisconnect");
 
-                    Sentry.captureException(`ChatClient disconnected, reason: ${reason}`);
+                    logger.error("Client disconnected unexpectedly");
+                    logger.error("Details:", { manually, reason });
+
+                    Sentry.captureException(`Client disconnected unexpectedly: ${reason}`);
 
                     // Exit process if Client was not disconnected manually
                     if (!manually) process.exit(1);
@@ -171,12 +189,12 @@ export default class TwitchClient {
                 this.channels.client = this.client;
                 this.channels.listen();
             } catch (error) {
+                logger.fatal("Unexpected Error during setup");
+                logger.fatal(error);
+
                 Sentry.captureException(error);
 
-                signale.fatal("An unexpected error occurred during the initial setup");
-                signale.fatal(error);
-
-                throw new Error("An unexpected error occurred during the initial setup");
+                throw new Error("Unexpected Error during setup");
             }
         })();
     }

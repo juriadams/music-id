@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/node";
 
 import { ChatClient, ChatUser } from "twitch-chat-client/lib";
-import signale from "signale";
 
 import MessageComposer from "./composer";
 import Identifier from "./identifier";
@@ -10,6 +9,8 @@ import { ApiClient } from "twitch/lib";
 import { LATEST_IDENTIFICATION } from "../queries/queries";
 import { Identification } from "../interfaces/identification.interface";
 import GraphQL from "./graphql";
+
+import { Signale } from "signale";
 
 export default class MessageHandler {
     /**
@@ -28,6 +29,8 @@ export default class MessageHandler {
      * @returns Promise resolving once the Message was processed
      */
     public async handle(channel: string, message: string, user: ChatUser, client: ChatClient): Promise<void> {
+        const logger = new Signale().scope("Handler", channel, "handle");
+
         // Strip leading `#` from Channel name
         channel = channel.toLowerCase().replace("#", "");
 
@@ -45,11 +48,17 @@ export default class MessageHandler {
                 );
 
             // Check if a `target` was specified
-            if (!target) return client.action(channel, `Please provide a channel name! Command usage: ${command} <channel>`);
+            if (!target) {
+                logger.warn("No target specified");
+                return client.action(channel, `Please provide a channel name! Command usage: ${command} <channel>`);
+            }
 
             // Check if target Channel is live
             const stream = await this.api?.helix?.streams?.getStreamByUserName(target);
-            if (!stream) return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
+            if (!stream) {
+                logger.warn("Channel is offline");
+                return client.action(channel, `${target} seems to be offline. Please try again with a live channel.`);
+            }
 
             return this.identify(channel, target, user, message, client);
         }
@@ -59,7 +68,7 @@ export default class MessageHandler {
 
         // Check if configuration exists for Channel
         if (!config) {
-            signale.error(`Received Message from Channel \`${channel}\` which has no configuration`);
+            logger.error("Could not find Channel configuration");
             Sentry.captureException(new Error(`Received Message from Channel \`${channel}\` which has no configuration`));
             return;
         }
@@ -85,19 +94,22 @@ export default class MessageHandler {
      * @returns Promise resolving once the Identification finished
      */
     public async identify(host: string, target: string, user: ChatUser, message: string, client: ChatClient): Promise<void> {
-        signale.scope(host).start(`Song identification requested for Channel \`${target}\` by \`${user.userName}\``);
+        const logger = new Signale().scope("Handler", target, "identify");
+
+        logger.start(`Identification requested by ${user.userName}`);
 
         // If identification was requested for the Channel the command was sent in
         if (host === target) {
             try {
-                signale.scope(host).await("Fetching Channel configuration");
-
                 // Get Channel configuration
                 const config = this.channels.configurations.get(target);
-                if (!config) throw new Error(`Could not find Channel configuration`);
+                if (!config) {
+                    logger.error("Could not find Channel configuration");
+                    throw new Error("Could not find Channel configuration");
+                }
 
                 // Check if Identification is already in progress in Channel
-                if (this.channels.pending.get(config.id)) return signale.scope(host).warn("Identification is already in progress");
+                if (this.channels.pending.get(config.id)) return logger.warn("Identification is already in progress");
 
                 // Get the latest Identification for the Channel
                 const latest: Identification = await this.graphql.client
@@ -110,22 +122,21 @@ export default class MessageHandler {
                 // Check if the Channel is currently on cooldown
                 if (latest && config.cooldown > latest.since) {
                     // Check if the cooldown notice was already sent in Channel
-                    if (this.channels.cooldownNotice.get(config.id)) return signale.scope(host).warn("Cooldown notice was already sent");
+                    if (this.channels.cooldownNotice.get(config.id)) return logger.warn("Cooldown notice was already sent");
 
-                    signale.scope(host).await("Sending cooldown notice");
                     this.channels.cooldownNotice.set(config.id, true);
 
                     const response = this.composer.COOLDOWN(config, user, config.cooldown - latest.since, latest);
 
                     return this.composer.send(client, config, response).then(() => {
-                        signale.scope(host).success("Sent cooldown notice");
+                        logger.scope(host).success("Sent cooldown notice");
                     });
                 }
 
                 // Mark Channel as `pending`
                 this.channels.pending.set(config.id, true);
 
-                signale.scope(host).await("Listening...");
+                logger.await("Analyzing...");
 
                 // Forcefully reset Channels `pending` and `cooldownNotice` state after 10 seconds
                 setTimeout(() => {
@@ -137,7 +148,7 @@ export default class MessageHandler {
                 const identification = await this.identifier.identify(target, user.userName, message);
                 const { songs } = identification;
 
-                songs.length > 0 ? signale.scope(host).success(`Identified ${songs.length} Songs`) : signale.scope(host).warn("No result");
+                songs.length > 0 ? logger.success(`Identified ${songs.length} songs`) : logger.warn("No result");
 
                 // Reset Channel
                 this.channels.pending.set(config.id, false);
@@ -150,16 +161,19 @@ export default class MessageHandler {
                         : this.composer.ERROR(config, user, "No result, we didn't quite catch that.");
 
                 await this.composer.send(client, config, response);
-                signale.scope(host).success("Sent response");
+                logger.scope(host).success("Sent response");
             } catch (error) {
-                Sentry.captureException(error);
+                logger.error("Error identifying songs");
+                logger.error(error);
 
-                signale.scope(host).error("Something went wrong while identifying Songs");
-                signale.scope(host).error(error);
+                Sentry.captureException(error);
 
                 // Get Channel configuration
                 const config = this.channels.configurations.get(target);
-                if (!config) throw new Error(`Could not find Channel configuration`);
+                if (!config) {
+                    logger.error("Could not find Channel configuration");
+                    throw new Error("Could not find Channel configuration");
+                }
 
                 // Reset Channel
                 this.channels.pending.set(config.id, false);
@@ -167,20 +181,20 @@ export default class MessageHandler {
 
                 // Respond with error message
                 await this.composer.send(client, config, `@${user.displayName} → Something went wrong! ${error.message}`);
-                signale.scope(host).success("Sent error message");
+                logger.success("Sent error response");
             }
         }
 
         // If identification was requested for a different Channel
         if (host !== target) {
             try {
-                signale.scope(host).await("Listening...");
+                logger.await("Analyzing...");
 
                 // Identify Songs for targetChannel
                 const identification = await this.identifier.identify(target, user.userName, message);
                 const { songs } = identification;
 
-                songs.length > 0 ? signale.scope(host).success(`Identified ${songs.length} Songs`) : signale.scope(host).warn("No result");
+                songs.length > 0 ? logger.success(`Identified ${songs.length} songs`) : logger.warn("No result");
 
                 await (songs.length > 0
                     ? client.action(
@@ -191,15 +205,15 @@ export default class MessageHandler {
                       )
                     : client.action(host, ""));
 
-                signale.scope(host).success("Sent response");
+                logger.scope(host).success("Sent response");
             } catch (error) {
-                signale.scope(host).error("Something went wrong while identifying Songs");
-                signale.scope(host).error(error);
+                logger.error("Error identifying songs");
+                logger.error(error);
 
                 Sentry.captureException(error);
 
                 await client.action(host, `Something went wrong! ${error.message}`);
-                signale.scope(host).success("Sent error message");
+                logger.scope(host).success("Sent error response");
             }
         }
     }

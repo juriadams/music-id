@@ -1,21 +1,13 @@
 import * as Sentry from "@sentry/node";
 
 import { ChatClient } from "twitch-chat-client/lib";
-import signale from "signale";
 
 import { Channel } from "../interfaces/channel.interface";
-import { Identification } from "../interfaces/identification.interface";
 
 import GraphQL from "./graphql";
-import {
-    CHANNEL,
-    CHANNELS,
-    CHANNEL_ADDED,
-    CHANNEL_DELETED,
-    CHANNEL_UPDATED,
-    LATEST_IDENTIFICATION,
-    UPDATE_CHANNEL,
-} from "../queries/queries";
+import { CHANNEL, CHANNELS, CHANNEL_ADDED, CHANNEL_DELETED, CHANNEL_UPDATED, UPDATE_CHANNEL } from "../queries/queries";
+
+import { Signale } from "signale";
 
 export default class Channels {
     /**
@@ -58,15 +50,20 @@ export default class Channels {
      * @returns Channel configuration
      */
     public async getChannel(id: string): Promise<Channel> {
+        const logger = new Signale().scope("Channels", id, "getChannel");
+
+        logger.await("Fetching Channel configuration");
+
         return this.graphql.client
             .query({ query: CHANNEL, variables: { id } })
             .then((res) => res.data.channel)
             .catch((error) => {
+                logger.error("Error fetching Channel configuration");
+                logger.error(error);
+
                 Sentry.captureException(error);
 
-                signale.error(`Unexpected error while fetching configuration for Channel \`${id}\``);
-                signale.error(error);
-                throw new Error(`Unexpected error while fetching configuration for Channel \`${id}\``);
+                throw new Error(`Error fetching Channel configuration for \`${id}\``);
             });
     }
 
@@ -74,8 +71,6 @@ export default class Channels {
      * Listen to various GraphQL Subscriptions
      */
     public listen(): void {
-        signale.await("Listening for Channel changes");
-
         // Listen for Channel additions
         this.graphql.client
             .subscribe({
@@ -85,10 +80,14 @@ export default class Channels {
                 next: async (res) => {
                     const id = res.data.channelAdded.id;
 
-                    try {
-                        const channel = await this.getChannel(id);
+                    const logger = new Signale().scope("Channels", id, "channelAdded");
+                    logger.info("Channel was added");
 
-                        signale.scope(channel.name).info(`New Channel \`${channel.name}\` was added`);
+                    try {
+                        logger.await("Fetching Channel configuration");
+
+                        const channel = await this.getChannel(id);
+                        logger.info(channel);
 
                         // Store Channel configuration
                         this.configurations.set(channel.name, channel);
@@ -98,25 +97,29 @@ export default class Channels {
                         this.client
                             ?.join(channel.name)
                             .then(() => {
-                                signale.success(`Joined Channel \`${channel.name}\``);
+                                logger.success(`Joined Channel ${channel.name}`);
                                 this.partOf.push(channel.name);
                             })
                             .catch((error) => {
-                                signale.error(`Error joining Channel \`${channel.name}\``);
-                                signale.error(error);
+                                logger.error(`Error joining Channel ${channel.name}`);
+                                logger.error(error);
                             });
                     } catch (error) {
+                        logger.error("Error fettching Channel configuration");
+                        logger.error(error);
+
                         Sentry.captureException(error);
 
-                        signale.error(`Error fetching configuration for Channel with Id \`${id}\``);
-                        throw new Error(`Error fetching configuration for Channel with Id \`${id}\``);
+                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
                     }
                 },
                 error: (error) => {
-                    Sentry.captureException(error);
+                    const logger = new Signale().scope("Channels", "channelAdded");
 
-                    signale.error("An error occurred while processing a `channelAdded` event");
-                    signale.error(error);
+                    logger.error("Error processing `channelAdded` event");
+                    logger.error(error);
+
+                    Sentry.captureException(error);
                 },
             });
 
@@ -129,11 +132,14 @@ export default class Channels {
                 next: async (res) => {
                     const id = res.data.channelUpdated.id;
 
-                    try {
-                        const channel = await this.getChannel(id);
+                    const logger = new Signale().scope("Channels", id, "channelUpdated");
+                    logger.info("Channel was updated");
 
-                        signale.info(`Configuration for Channel \`${channel.name}\` was updated`);
-                        signale.info(channel);
+                    try {
+                        logger.await("Fetching Channel configuration");
+
+                        const channel = await this.getChannel(id);
+                        logger.info(channel);
 
                         // Store Channel configuration
                         this.configurations.set(channel.name, channel);
@@ -141,36 +147,40 @@ export default class Channels {
                         this.cooldownNotice.set(channel.name, false);
 
                         if (this.partOf.includes(channel.name) && !channel.enabled) {
-                            signale.info(`Leaving Channel \`${channel.name}\` because it is no longer \`enabled\``);
+                            logger.info(`Leaving Channel \`${channel.name}\` since it was deactivated`);
                             this.partOf = this.partOf.filter((c) => c !== channel.name);
                             this.client?.part(channel.name);
                         }
 
                         if (!this.partOf.includes(channel.name) && channel.enabled) {
-                            signale.scope(channel.name).info(`Joining Channel because it was \`enabled\` again`);
+                            logger.info(`Joining Channel \`${channel.name}\` since it was activated`);
                             this.client
                                 ?.join(channel.name)
                                 .then(() => {
-                                    signale.success(`Joined Channel \`${channel.name}\``);
+                                    logger.success(`Joined Channel \`${channel.name}\``);
                                     this.partOf.push(channel.name);
                                 })
                                 .catch((error) => {
-                                    signale.error(`Error joining Channel \`${channel}\``);
-                                    signale.error(error);
+                                    logger.error(`Error joining Channel ${channel.name}`);
+                                    logger.error(error);
                                 });
                         }
                     } catch (error) {
+                        logger.error("Error fettching Channel configuration");
+                        logger.error(error);
+
                         Sentry.captureException(error);
 
-                        signale.error(`Error fetching configuration for Channel with Id \`${id}\``);
-                        throw new Error(`Error fetching configuration for Channel with Id \`${id}\``);
+                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
                     }
                 },
                 error: (error) => {
-                    Sentry.captureException(error);
+                    const logger = new Signale().scope("Channels", "channelUpdated");
 
-                    signale.error("An error occurred while processing a `channelUpdated` event");
-                    signale.error(error);
+                    logger.error("Error processing `channelUpdated` event");
+                    logger.error(error);
+
+                    Sentry.captureException(error);
                 },
             });
 
@@ -182,22 +192,41 @@ export default class Channels {
             .subscribe({
                 next: async (res) => {
                     const id = res.data.channelDeleted.id;
-                    const channel = this.configurations.get(id);
 
-                    if (!channel)
-                        return signale.warn(`Could not find configuration for Channel with Id \`${id}\`, hence nothing to unlink`);
+                    const logger = new Signale().scope("Channels", id, "channelDeleted");
+                    logger.info("Channel was deleted");
 
-                    signale.info(`Configuration for Channel \`${channel.name}\` was deleted`);
+                    try {
+                        logger.await("Fetching Channel configuration");
 
-                    this.configurations.delete(id);
-                    this.client?.part(channel.name);
-                    this.partOf = this.partOf.filter((c) => c !== channel.name);
+                        const channel = this.configurations.get(id);
+                        if (!channel) {
+                            logger.error("No such Channel inside memory storage");
+                            return;
+                        }
+
+                        logger.info(channel);
+
+                        // Delete Channel configuration from memory
+                        this.configurations.delete(id);
+                        this.client?.part(channel.name);
+                        this.partOf = this.partOf.filter((c) => c !== channel.name);
+                    } catch (error) {
+                        logger.error("Error fettching Channel configuration");
+                        logger.error(error);
+
+                        Sentry.captureException(error);
+
+                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
+                    }
                 },
                 error: (error) => {
-                    Sentry.captureException(error);
+                    const logger = new Signale().scope("Channels", "channelDeleted");
 
-                    signale.error("An error occurred while processing a `channelDeleted` event");
-                    signale.error(error);
+                    logger.error("Error processing `channelDeleted` event");
+                    logger.error(error);
+
+                    Sentry.captureException(error);
                 },
             });
     }
@@ -208,6 +237,9 @@ export default class Channels {
      * @returns Updated Channel Configuration
      */
     public async updateChannel(id: string): Promise<Channel> {
+        const logger = new Signale().scope("Channels", id, "updateChannel");
+        logger.await("Updating Channel configuration");
+
         try {
             const channel = await this.graphql.client
                 .query({
@@ -221,14 +253,16 @@ export default class Channels {
             this.pending.set(channel.name, false);
             this.cooldownNotice.set(channel.name, false);
 
+            logger.success("Updated Channel configuration");
+
             return channel;
         } catch (error) {
+            logger.error("Error updating Channel configuration");
+            logger.error(error);
+
             Sentry.captureException(error);
 
-            signale.fatal(`An unexpected error occurred while fetching the Channel configuration for ${id}`);
-            signale.fatal(error);
-
-            throw new Error(`An unexpected error occurred while fetching the Channel configuration for ${id}`);
+            throw new Error(`Error updating Channel configuration for \`${id}\``);
         }
     }
 
@@ -237,6 +271,9 @@ export default class Channels {
      * @returns Array of Channel names
      */
     public async getConfigurations(): Promise<string[]> {
+        const logger = new Signale().scope("Channels", "getConfigurations");
+        logger.await("Fetching Channel configurations");
+
         try {
             let channels = await this.graphql.client
                 .query({
@@ -245,6 +282,8 @@ export default class Channels {
                 .then((res) => res.data.channels);
 
             if (process.env.NODE_ENV !== "production") channels = [channels[0]];
+
+            logger.success(`Received ${channels.length} configurations`);
 
             return channels.map((channel: Channel) => {
                 // Store Channel configurations
@@ -256,65 +295,12 @@ export default class Channels {
                 return channel.name;
             });
         } catch (error) {
+            logger.error("Error fetching Channel configurations");
+            logger.error(error);
+
             Sentry.captureException(error);
 
-            signale.fatal(`An unexpected error occurred while fetching all Channel configurations`);
-            signale.fatal(error);
-
-            throw new Error(`An unexpected error occurred while fetching all Channel configurations`);
-        }
-    }
-
-    /**
-     * Check if a Channel is currently on cooldown
-     * @param channel Object containing the Channel configuration
-     * @returns Object containing `onCooldown`, `since`, `remaining`, and latest `identification`
-     */
-    public async onCooldown(
-        channel: Channel,
-    ): Promise<{ onCooldown: boolean; since?: number; remaining?: number; identification?: Identification }> {
-        try {
-            // Get the latest Identification for a Channel
-            const identification: Identification = await this.graphql.client
-                .query({
-                    query: LATEST_IDENTIFICATION,
-                    variables: { id: channel.id },
-                })
-                .then((res) => res.data.channel.identifications[0]);
-
-            // Return if no Identification was found
-            if (!identification) {
-                signale.warn(`No previous Identification found for Channel \`${channel.name}\``);
-                return {
-                    onCooldown: false,
-                    since: undefined,
-                    remaining: undefined,
-                    identification: undefined,
-                };
-            }
-
-            // Calculate seconds left until next Identification may be attempted
-            const since = Math.round(Math.abs((new Date().getTime() - new Date(identification.date).getTime()) / 1000));
-            const remaining = channel.cooldown - since;
-
-            // Check if Channel is on cooldown
-            const onCooldown = since > 0 && since < channel.cooldown;
-
-            signale.info(`${since} seconds passed since last Identification in Channel \`${channel.name}\``);
-
-            return {
-                onCooldown,
-                since,
-                remaining,
-                identification,
-            };
-        } catch (error) {
-            Sentry.captureException(error);
-
-            signale.scope(channel.name).error(`Unexpected error checking Cooldown for Channel \`${channel.name}\``);
-            signale.scope(channel.name).error(error);
-
-            throw new Error(`Unexpected error checking Cooldown for Channel \`${channel.name}\``);
+            throw new Error("Error fetching Channel configurations");
         }
     }
 
@@ -323,15 +309,16 @@ export default class Channels {
      * @param channel `name` of the Channel to disable
      * @returns Updated (disabled) Channel configuration
      */
-    public async disable(channel: string): Promise<Channel> {
-        signale.await(`Disabling Channel \`${channel}\``);
+    public async disableChannel(channel: string): Promise<Channel> {
+        const logger = new Signale().scope("Channels", channel, "disableChannel");
+        logger.await("Disabling Channel");
 
-        // Get Channel configuration from Store
+        // Get Channel configuration from memory store
         const config = this.configurations.get(channel);
 
         if (!config) {
-            signale.error(`Could not find Channel configuration for Channel \`${channel}\``);
-            throw Error(`Could not find Channel configuration for Channel \`${channel}\``);
+            logger.error("No such Channel inside memory storage");
+            throw new Error("No such Channel inside memory storage");
         }
 
         return this.graphql.client
@@ -340,14 +327,16 @@ export default class Channels {
                 variables: { id: config.id, enabled: false },
             })
             .then((res) => {
-                signale.success(`Disabled Channel \`${config.name}\``);
+                logger.success("Disabled Channel");
                 return res.data.updateChannel;
             })
             .catch((error) => {
+                logger.error("Error disabling Channel");
+                logger.error(error);
+
                 Sentry.captureException(error);
 
-                signale.error(`Error disabling Channel \`${config.name}\``);
-                signale.error(error);
+                throw new Error(`Error disabling Channel \`${channel}\``);
             });
     }
 }
