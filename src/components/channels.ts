@@ -129,8 +129,6 @@ export default class Channels {
                 next: async (res) => {
                     const id = res.data.channelUpdated.id;
 
-                    signale.debug("YO");
-
                     try {
                         const channel = await this.getChannel(id);
 
