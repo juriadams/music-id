@@ -35,7 +35,7 @@ export default class MessageComposer {
             .replace("%RESULTS%", identification.songs.length.toString())
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", this.getArtists(song.artists))
-            .replace("%URL%", song.url);
+            .replace("%URL%", `https://id.adams.sh/id/${identification.id}`);
     };
 
     /**
@@ -58,7 +58,7 @@ export default class MessageComposer {
                   .replace("%TITLE%", song.title)
                   .replace("%ARTIST%", this.getArtists(song.artists))
                   .replace("%SINCE%", moment((identification as Identification).date).fromNow())
-                  .replace("%URL%", song.url)
+                  .replace("%URL%", `https://id.adams.sh/id/${(identification as Identification).id}`)
             : channel.templates.cooldown
                   .replace("%CHANNEL%", channel.name)
                   .replace("%REQUESTER%", user.userName)
