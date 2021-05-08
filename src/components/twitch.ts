@@ -100,7 +100,7 @@ export default class TwitchClient {
                 await this.client.connect();
                 signale.success("ChatClient connected");
 
-                signale.await("Waiting 10 seconds before joining Channels");
+                signale.await("Waiting 5 seconds before joining Channels");
 
                 // Join Channels after idling for 10 seconds
                 setTimeout(async () => {
@@ -122,7 +122,7 @@ export default class TwitchClient {
                                 signale.error(error);
                             });
                     }, Promise.resolve());
-                }, 10000);
+                }, 5000);
 
                 // Handle `authenticationFailure` events
                 this.client.onAuthenticationFailure((msg) => {

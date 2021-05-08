@@ -139,7 +139,6 @@ export const IDENTIFY = gql`
         identify(channel: $channel, requester: $requester, message: $message) {
             id
             successful
-            provider
             songs {
                 id
                 provider

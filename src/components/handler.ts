@@ -108,7 +108,7 @@ export default class MessageHandler {
                     .then((res) => res.data.identifications[0]);
 
                 // Check if the Channel is currently on cooldown
-                if (config.cooldown > latest.since) {
+                if (latest && config.cooldown > latest.since) {
                     // Check if the cooldown notice was already sent in Channel
                     if (this.channels.cooldownNotice.get(config.id)) return signale.scope(host).warn("Cooldown notice was already sent");
 
@@ -146,7 +146,7 @@ export default class MessageHandler {
                 // Respond with identified Songs
                 const response =
                     songs.length > 0
-                        ? this.composer.SUCCESS(config, user, songs[0])
+                        ? this.composer.SUCCESS(config, user, identification)
                         : this.composer.ERROR(config, user, "No result, we didn't quite catch that.");
 
                 await this.composer.send(client, config, response);

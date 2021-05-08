@@ -3,7 +3,6 @@ import moment from "moment";
 
 import { Identification } from "../interfaces/identification.interface";
 import { Channel } from "../interfaces/channel.interface";
-import { Song } from "../interfaces/song.interface";
 
 export default class MessageComposer {
     /**
@@ -27,12 +26,16 @@ export default class MessageComposer {
      * @param song Identified Song object
      * @returns Hydrated Template
      */
-    public SUCCESS = (channel: Channel, user: ChatUser, song: Song): string => {
+    public SUCCESS = (channel: Channel, user: ChatUser, identification: Identification): string => {
+        const song = identification.songs[0];
+
         return channel.templates.success
+            .replace("%CHANNEL%", channel.name)
             .replace("%REQUESTER%", user.userName)
+            .replace("%RESULTS%", identification.songs.length.toString())
             .replace("%TITLE%", song.title)
             .replace("%ARTIST%", this.getArtists(song.artists))
-            .concat(channel.links && song.url ? ` → ${song.url}` : "");
+            .replace("%URL%", song.url);
     };
 
     /**
@@ -49,12 +52,17 @@ export default class MessageComposer {
 
         return song
             ? channel.templates.previousCooldown
+                  .replace("%CHANNEL%", channel.name)
                   .replace("%REQUESTER%", user.userName)
+                  .replace("%RESULTS%", (identification as Identification).toString())
                   .replace("%TITLE%", song.title)
                   .replace("%ARTIST%", this.getArtists(song.artists))
-                  .replace("%TIME%", moment((identification as Identification).date).fromNow())
-                  .concat(channel.links && song.url ? ` → ${song.url}` : "")
-            : channel.templates.cooldown.replace("%REQUESTER%", user.userName).replace("%REMAINING%", remaining.toString());
+                  .replace("%SINCE%", moment((identification as Identification).date).fromNow())
+                  .replace("%URL%", song.url)
+            : channel.templates.cooldown
+                  .replace("%CHANNEL%", channel.name)
+                  .replace("%REQUESTER%", user.userName)
+                  .replace("%REMAINING%", remaining.toString());
     };
 
     /**
@@ -65,7 +73,10 @@ export default class MessageComposer {
      * @returns Hydrated Template
      */
     public ERROR = (channel: Channel, user: ChatUser, errorMessage?: string): string => {
-        return channel.templates.error.replace("%REQUESTER%", user.userName).replace("%ERROR%", errorMessage || "<unknown error>");
+        return channel.templates.error
+            .replace("%CHANNEL%", channel.name)
+            .replace("%REQUESTER%", user.userName)
+            .replace("%ERROR%", errorMessage || "Unknown Error");
     };
 
     /**
