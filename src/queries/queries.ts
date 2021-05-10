@@ -63,7 +63,6 @@ export const CHANNELS = gql`
             actions
             dateAdded
             triggers(enabled: true) {
-                id
                 keyword
             }
             templates {
@@ -86,7 +85,6 @@ export const CHANNEL = gql`
             actions
             dateAdded
             triggers(enabled: true) {
-                id
                 keyword
             }
             templates {
@@ -109,7 +107,6 @@ export const LATEST_IDENTIFICATION = gql`
             songs {
                 title
                 artists {
-                    id
                     name
                 }
                 url
@@ -146,11 +143,9 @@ export const IDENTIFY = gql`
                 isrc
                 title
                 artists {
-                    id
                     name
                 }
                 albums {
-                    id
                     name
                 }
                 label
