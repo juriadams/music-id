@@ -201,7 +201,7 @@ export default class MessageHandler {
                           host,
                           `${target} is currently playing "${songs[0].title}" by ${this.composer.getArtists(
                               songs[0].artists,
-                          )} → Stream it here: ${songs[0].url}`,
+                          )} → https://id.adams.sh/id/${identification.id}`,
                       )
                     : client.action(host, ""));
 
