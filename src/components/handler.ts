@@ -203,7 +203,7 @@ export default class MessageHandler {
                               songs[0].artists,
                           )} → https://id.adams.sh/id/${identification.id}`,
                       )
-                    : client.action(host, ""));
+                    : client.action(host, `No Results in channel ${target}`));
 
                 logger.scope(host).success("Sent response");
             } catch (error) {
