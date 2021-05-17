@@ -29,10 +29,10 @@ export default class MessageHandler {
      * @returns Promise resolving once the Message was processed
      */
     public async handle(channel: string, message: string, user: ChatUser, client: ChatClient): Promise<void> {
-        const logger = new Signale().scope("Handler", channel, "handle");
-
         // Strip leading `#` from Channel name
         channel = channel.toLowerCase().replace("#", "");
+
+        const logger = new Signale().scope("Handler", channel, "handle");
 
         const isHostChannel = channel === this.channels.client?.currentNick?.toLowerCase();
         const command = message.toLowerCase().split(" ")[0];
