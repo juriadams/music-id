@@ -103,7 +103,7 @@ export default class TwitchClient {
 
                 logger.await("Waiting 5 seconds before joining Channels");
 
-                // Join Channels after idling for 10 seconds
+                // Join Channels after idling for 5 seconds
                 setTimeout(async () => {
                     logger.start(`Joining ${channels.length} Channels`);
 
@@ -123,6 +123,10 @@ export default class TwitchClient {
                             .catch((error) => {
                                 logger.error("Error joining Channel");
                                 logger.error(error);
+
+                                // Disable Channel if the bot is banned
+                                if (error?.message?.includes("Did not receive a reply to join"))
+                                    this.channels.disableChannel(next, "JOIN_BANNED");
                             });
                     }, Promise.resolve());
                 }, 5000);
@@ -150,7 +154,7 @@ export default class TwitchClient {
 
                         logger.await("Disabling Channel");
                         this.channels
-                            .disableChannel(channel)
+                            .disableChannel(channel, "BANNED")
                             .then(() => {
                                 logger.success("Disabled Channel");
                             })

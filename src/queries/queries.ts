@@ -62,6 +62,7 @@ export const CHANNELS = gql`
             cooldown
             actions
             dateAdded
+            ignored
             triggers(enabled: true) {
                 keyword
             }
@@ -84,6 +85,7 @@ export const CHANNEL = gql`
             cooldown
             actions
             dateAdded
+            ignored
             triggers(enabled: true) {
                 keyword
             }
@@ -122,8 +124,8 @@ export const LATEST_IDENTIFICATION = gql`
 `;
 
 export const UPDATE_CHANNEL = gql`
-    mutation Channel($id: String!, $enabled: Boolean!) {
-        updateChannel(channel: { id: $id }, data: { enabled: $enabled }) {
+    mutation Channel($id: String!, $enabled: Boolean!, $reason: String) {
+        updateChannel(channel: { id: $id }, data: { enabled: $enabled, disabledReason: $reason }) {
             id
             name
             enabled

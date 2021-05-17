@@ -307,11 +307,13 @@ export default class Channels {
     /**
      * Disable a specific Channel
      * @param channel `name` of the Channel to disable
+     * @param reason Reason why the channel was disabled
      * @returns Updated (disabled) Channel configuration
      */
-    public async disableChannel(channel: string): Promise<Channel> {
+    public async disableChannel(channel: string, reason: string): Promise<Channel> {
         const logger = new Signale().scope("Channels", channel, "disableChannel");
         logger.await("Disabling Channel");
+        logger.info("Reason:", reason);
 
         // Get Channel configuration from memory store
         const config = this.configurations.get(channel);
@@ -324,7 +326,7 @@ export default class Channels {
         return this.graphql.client
             .mutate({
                 mutation: UPDATE_CHANNEL,
-                variables: { id: config.id, enabled: false },
+                variables: { id: config.id, enabled: false, reason },
             })
             .then((res) => {
                 logger.success("Disabled Channel");
