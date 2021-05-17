@@ -161,7 +161,7 @@ export default class MessageHandler {
                         : this.composer.ERROR(config, user, "No result, we didn't quite catch that.");
 
                 await this.composer.send(client, config, response);
-                logger.scope(host).success("Sent response");
+                logger.success("Sent response");
             } catch (error) {
                 logger.error("Error identifying songs");
                 logger.error(error);
