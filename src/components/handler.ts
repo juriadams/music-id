@@ -73,6 +73,12 @@ export default class MessageHandler {
             return;
         }
 
+        // Check if user is ignored in Channel
+        if (config.ignored?.some((name) => name.toLowerCase() === user.userName.toLowerCase())) {
+            logger.warn(`Ignoring message from \`${user.userName}\``);
+            return;
+        }
+
         // Handle Identifications
         if (config.triggers.some((trigger) => message.toLowerCase().includes(trigger.keyword))) {
             // Check if Channel is live

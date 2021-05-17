@@ -9,6 +9,7 @@ export interface Channel {
     actions: boolean;
     links: boolean;
     dateAdded: Date;
+    ignored: string[];
     identifications: Partial<Identification>[];
     triggers: Trigger[];
     templates: {
