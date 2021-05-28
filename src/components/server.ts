@@ -16,7 +16,6 @@ export default class Server {
         })
         .get("/channels", (req, res) => {
             const logger = new Signale().scope("Server", "channels");
-            logger.await("Fetching current Channels");
 
             try {
                 // Abort if Secret doesn't match
