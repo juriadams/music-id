@@ -10,9 +10,9 @@ export default class GraphQL {
         cache: new InMemoryCache({ resultCaching: false }),
         link: createHttpLink({
             fetch,
-            uri: process.env.BOT_API_HTTP as string,
+            uri: `http://api:${process.env.API_PORT}`,
             headers: {
-                Authorization: `Secret ${process.env.SHARED_API_SECRET}`,
+                Authorization: `Secret ${process.env.API_SECRET}`,
             },
         }),
         defaultOptions: {

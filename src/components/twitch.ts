@@ -149,7 +149,7 @@ export default class TwitchClient {
                     channel = channel.toLocaleLowerCase().replace("#", "");
                     const logger = new Signale().scope("Twitch", "onBan", channel);
 
-                    if (user === process.env.TWITCH_BOT_USER) {
+                    if (user.toLowerCase() === this.client?.currentNick.toLowerCase()) {
                         logger.warn("Bot was banned");
 
                         logger.await("Disabling Channel");

@@ -8,7 +8,7 @@ export default class Gateway {
     public on: (ev: string, ...args: any[]) => Socket;
 
     constructor() {
-        const logger = new Signale().scope("WebSocket", "constructor");
+        const logger = new Signale().scope("Gateway", "constructor");
 
         logger.await("Connecting to Gateway");
         this.socket = io(`ws://gateway:${process.env.GATEWAY_PORT}`, { auth: { secret: process.env.GATEWAY_SECRET } });

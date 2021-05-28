@@ -20,7 +20,7 @@ export default class Server {
 
             try {
                 // Abort if Secret doesn't match
-                if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.SHARED_API_SECRET)
+                if (process.env.NODE_ENV !== "development" && req.header("secret") !== process.env.BOT_SECRET)
                     return res.status(403).json({ error: "Wrong Secret" });
 
                 // Return list of Channels the Bot is part of and boolean if the Client is currently connected
