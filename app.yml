@@ -1,0 +1,5 @@
+apps:
+    - script: dist/index.js
+      name: "bot"
+      out_file: /tmp/logs/out.log
+      error_file: /tmp/logs/error.log
