@@ -23,13 +23,15 @@ import MessageComposer from "./components/composer";
 import Identifier from "./components/identifier";
 import Server from "./components/server";
 import GraphQL from "./components/graphql";
+import Gateway from "./components/gateway";
 
 /**
  * Instanciate Bot Components
  */
 const graphql = new GraphQL();
+const gateway = new Gateway();
 const composer = new MessageComposer();
-const channels = new Channels(graphql);
+const channels = new Channels(graphql, gateway);
 const identifier = new Identifier(graphql);
 const handler = new MessageHandler(graphql, channels, composer, identifier);
 const client = new TwitchClient(graphql, channels, handler);

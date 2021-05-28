@@ -4,8 +4,10 @@ import { ChatClient } from "twitch-chat-client/lib";
 
 import { Channel } from "../interfaces/channel.interface";
 
+import Gateway from "./gateway";
 import GraphQL from "./graphql";
-import { CHANNEL, CHANNELS, CHANNEL_ADDED, CHANNEL_DELETED, CHANNEL_UPDATED, UPDATE_CHANNEL } from "../queries/queries";
+
+import { CHANNEL, CHANNELS, UPDATE_CHANNEL } from "../queries/queries";
 
 import { Signale } from "signale";
 
@@ -42,7 +44,7 @@ export default class Channels {
      */
     public client?: ChatClient;
 
-    constructor(private graphql: GraphQL) {}
+    constructor(private graphql: GraphQL, private gateway: Gateway) {}
 
     /**
      * Fetch the Configuration for a specific Channel
@@ -71,164 +73,107 @@ export default class Channels {
      * Listen to various GraphQL Subscriptions
      */
     public listen(): void {
-        // Listen for Channel additions
-        this.graphql.client
-            .subscribe({
-                query: CHANNEL_ADDED,
-            })
-            .subscribe({
-                next: async (res) => {
-                    const id = res.data.channelAdded.id;
+        this.gateway.socket.on("channelAdded", async (id: string) => {
+            const logger = new Signale().scope("Channels", id, "channelAdded");
+            logger.info("Channel was added");
 
-                    const logger = new Signale().scope("Channels", id, "channelAdded");
-                    logger.info("Channel was added");
+            try {
+                logger.await("Fetching Channel configuration");
 
-                    try {
-                        logger.await("Fetching Channel configuration");
+                const channel = await this.getChannel(id);
+                logger.info(channel);
 
-                        const channel = await this.getChannel(id);
-                        logger.info(channel);
+                // Store Channel configuration
+                this.configurations.set(channel.name, channel);
+                this.pending.set(channel.name, false);
+                this.cooldownNotice.set(channel.name, false);
 
-                        // Store Channel configuration
-                        this.configurations.set(channel.name, channel);
-                        this.pending.set(channel.name, false);
-                        this.cooldownNotice.set(channel.name, false);
-
-                        this.client
-                            ?.join(channel.name)
-                            .then(() => {
-                                logger.success(`Joined Channel ${channel.name}`);
-                                this.partOf.push(channel.name);
-                            })
-                            .catch((error) => {
-                                logger.error(`Error joining Channel ${channel.name}`);
-                                logger.error(error);
-                            });
-                    } catch (error) {
-                        logger.error("Error fettching Channel configuration");
+                this.client
+                    ?.join(channel.name)
+                    .then(() => {
+                        logger.success(`Joined Channel ${channel.name}`);
+                        this.partOf.push(channel.name);
+                    })
+                    .catch((error) => {
+                        logger.error(`Error joining Channel ${channel.name}`);
                         logger.error(error);
+                    });
+            } catch (error) {
+                logger.error("Error fetching Channel configuration");
+                logger.error(error);
 
-                        Sentry.captureException(error);
+                Sentry.captureException(error);
+            }
+        });
 
-                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
-                    }
-                },
-                error: (error) => {
-                    const logger = new Signale().scope("Channels", "channelAdded");
+        this.gateway.socket.on("channelUpdated", async (id: string) => {
+            const logger = new Signale().scope("Channels", id, "channelUpdated");
+            logger.info("Channel was updated");
 
-                    logger.error("Error processing `channelAdded` event");
-                    logger.error(error);
+            try {
+                logger.await("Fetching Channel configuration");
 
-                    Sentry.captureException(error);
-                },
-            });
+                const channel = await this.getChannel(id);
+                logger.info(channel);
 
-        // Listen for Channel updates
-        this.graphql.client
-            .subscribe({
-                query: CHANNEL_UPDATED,
-            })
-            .subscribe({
-                next: async (res) => {
-                    const id = res.data.channelUpdated.id;
+                // Store Channel configuration
+                this.configurations.set(channel.name, channel);
+                this.pending.set(channel.name, false);
+                this.cooldownNotice.set(channel.name, false);
 
-                    const logger = new Signale().scope("Channels", id, "channelUpdated");
-                    logger.info("Channel was updated");
+                if (this.partOf.includes(channel.name) && !channel.enabled) {
+                    logger.info(`Leaving Channel \`${channel.name}\` since it was deactivated`);
+                    this.partOf = this.partOf.filter((c) => c !== channel.name);
+                    this.client?.part(channel.name);
+                }
 
-                    try {
-                        logger.await("Fetching Channel configuration");
+                if (!this.partOf.includes(channel.name) && channel.enabled) {
+                    logger.info(`Joining Channel \`${channel.name}\` since it was activated`);
+                    this.client
+                        ?.join(channel.name)
+                        .then(() => {
+                            logger.success(`Joined Channel \`${channel.name}\``);
+                            this.partOf.push(channel.name);
+                        })
+                        .catch((error) => {
+                            logger.error(`Error joining Channel ${channel.name}`);
+                            logger.error(error);
+                        });
+                }
+            } catch (error) {
+                logger.error("Error fetching Channel configuration");
+                logger.error(error);
 
-                        const channel = await this.getChannel(id);
-                        logger.info(channel);
+                Sentry.captureException(error);
+            }
+        });
 
-                        // Store Channel configuration
-                        this.configurations.set(channel.name, channel);
-                        this.pending.set(channel.name, false);
-                        this.cooldownNotice.set(channel.name, false);
+        this.gateway.socket.on("channelDeleted", async (id: string) => {
+            const logger = new Signale().scope("Channels", id, "channelDeleted");
+            logger.info("Channel was deleted");
 
-                        if (this.partOf.includes(channel.name) && !channel.enabled) {
-                            logger.info(`Leaving Channel \`${channel.name}\` since it was deactivated`);
-                            this.partOf = this.partOf.filter((c) => c !== channel.name);
-                            this.client?.part(channel.name);
-                        }
+            try {
+                logger.await("Fetching Channel configuration");
 
-                        if (!this.partOf.includes(channel.name) && channel.enabled) {
-                            logger.info(`Joining Channel \`${channel.name}\` since it was activated`);
-                            this.client
-                                ?.join(channel.name)
-                                .then(() => {
-                                    logger.success(`Joined Channel \`${channel.name}\``);
-                                    this.partOf.push(channel.name);
-                                })
-                                .catch((error) => {
-                                    logger.error(`Error joining Channel ${channel.name}`);
-                                    logger.error(error);
-                                });
-                        }
-                    } catch (error) {
-                        logger.error("Error fettching Channel configuration");
-                        logger.error(error);
+                const channel = this.configurations.get(id);
+                if (!channel) {
+                    logger.error("No such Channel inside memory storage");
+                    return;
+                }
 
-                        Sentry.captureException(error);
+                logger.info(channel);
 
-                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
-                    }
-                },
-                error: (error) => {
-                    const logger = new Signale().scope("Channels", "channelUpdated");
+                // Delete Channel configuration from memory
+                this.configurations.delete(id);
+                this.client?.part(channel.name);
+                this.partOf = this.partOf.filter((c) => c !== channel.name);
+            } catch (error) {
+                logger.error("Error fetching Channel configuration");
+                logger.error(error);
 
-                    logger.error("Error processing `channelUpdated` event");
-                    logger.error(error);
-
-                    Sentry.captureException(error);
-                },
-            });
-
-        // Listen for Channel deletions
-        this.graphql.client
-            .subscribe({
-                query: CHANNEL_DELETED,
-            })
-            .subscribe({
-                next: async (res) => {
-                    const id = res.data.channelDeleted.id;
-
-                    const logger = new Signale().scope("Channels", id, "channelDeleted");
-                    logger.info("Channel was deleted");
-
-                    try {
-                        logger.await("Fetching Channel configuration");
-
-                        const channel = this.configurations.get(id);
-                        if (!channel) {
-                            logger.error("No such Channel inside memory storage");
-                            return;
-                        }
-
-                        logger.info(channel);
-
-                        // Delete Channel configuration from memory
-                        this.configurations.delete(id);
-                        this.client?.part(channel.name);
-                        this.partOf = this.partOf.filter((c) => c !== channel.name);
-                    } catch (error) {
-                        logger.error("Error fettching Channel configuration");
-                        logger.error(error);
-
-                        Sentry.captureException(error);
-
-                        throw new Error(`Error fettching Channel configuration for \`${id}\``);
-                    }
-                },
-                error: (error) => {
-                    const logger = new Signale().scope("Channels", "channelDeleted");
-
-                    logger.error("Error processing `channelDeleted` event");
-                    logger.error(error);
-
-                    Sentry.captureException(error);
-                },
-            });
+                Sentry.captureException(error);
+            }
+        });
     }
 
     /**

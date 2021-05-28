@@ -1,29 +1,5 @@
 import { gql } from "@apollo/client/core";
 
-export const CHANNEL_ADDED = gql`
-    subscription Channel {
-        channelAdded {
-            id
-        }
-    }
-`;
-
-export const CHANNEL_UPDATED = gql`
-    subscription Channel {
-        channelUpdated {
-            id
-        }
-    }
-`;
-
-export const CHANNEL_DELETED = gql`
-    subscription Channel {
-        channelDeleted {
-            id
-        }
-    }
-`;
-
 export const CLIENT = gql`
     query Client($environment: String!) {
         client(client: { environment: $environment }) {

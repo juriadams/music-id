@@ -22,6 +22,7 @@
         "graphql": "^15.4.0",
         "moment": "^2.29.1",
         "signale": "^1.4.0",
+        "socket.io-client": "^4.1.2",
         "subscriptions-transport-ws": "^0.9.18",
         "twitch": "^4.5.0",
         "twitch-auth": "^4.5.0",

@@ -1,8 +1,6 @@
-import { ApolloClient, InMemoryCache, createHttpLink, split } from "@apollo/client/core";
-import { getMainDefinition } from "@apollo/client/utilities";
-import { WebSocketLink } from "@apollo/link-ws";
+import { ApolloClient, InMemoryCache, createHttpLink } from "@apollo/client/core";
+
 import fetch from "cross-fetch";
-import WebSocket from "ws";
 
 export default class GraphQL {
     /**
@@ -10,26 +8,13 @@ export default class GraphQL {
      */
     public client: ApolloClient<any> = new ApolloClient({
         cache: new InMemoryCache({ resultCaching: false }),
-        link: split(
-            ({ query }) => {
-                const def = getMainDefinition(query);
-                return def.kind === "OperationDefinition" && def.operation === "subscription";
+        link: createHttpLink({
+            fetch,
+            uri: process.env.BOT_API_HTTP as string,
+            headers: {
+                Authorization: `Secret ${process.env.SHARED_API_SECRET}`,
             },
-            new WebSocketLink({
-                uri: process.env.BOT_API_WS as string,
-                options: {
-                    reconnect: true,
-                },
-                webSocketImpl: WebSocket,
-            }),
-            createHttpLink({
-                fetch,
-                uri: process.env.BOT_API_HTTP as string,
-                headers: {
-                    Authorization: `Secret ${process.env.SHARED_API_SECRET}`,
-                },
-            }),
-        ),
+        }),
         defaultOptions: {
             watchQuery: {
                 fetchPolicy: "no-cache",
