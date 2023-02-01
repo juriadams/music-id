@@ -25,7 +25,7 @@
         "subscriptions-transport-ws": "^0.9.18",
         "twitch": "^4.5.0",
         "twitch-auth": "^4.5.0",
-        "twitch-chat-client": "^4.5.0",
+        "twitch-chat-client": "^4.6.7",
         "ws": "^7.4.6"
     },
     "devDependencies": {
