@@ -4,6 +4,8 @@
 
 Music ID is a service that automatically detects music running in Twitch streams. This is useful for Twitch streamers and viewers who want to know what music is being played during a stream. The service runs in the background and identifies music in real-time, so users don't have to manually search for the music being played!
 
+[» Get Started!](https://music-id.live)
+
 ### Features
 
 -   Real-Time Music Identification
@@ -14,7 +16,7 @@ Music ID is a service that automatically detects music running in Twitch streams
 
 ### Installation
 
-There is no installation required to use Music ID! It is provided as a service, meaning both the streamer and their viewers don't have to install or update anything. Simply visit the Music ID website, connect your Twitch account, and Music ID will start running in the background.
+There is no installation required to use Music ID! It is provided as a service, meaning both the streamer and their viewers don't have to install or update anything. Simply visit the [Music ID website](https://music-id.live), connect your Twitch account, and Music ID will start running in the background.
 
 ### Usage
 
